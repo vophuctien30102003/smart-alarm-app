@@ -1,21 +1,26 @@
+import { useTheme } from "@/contexts";
 import { Stack } from "expo-router";
 
 export default function HomeLayout() {
+    const { colors } = useTheme();
+
     return (
-        <Stack>
+        <Stack
+            screenOptions={{
+                headerStyle: {
+                    backgroundColor: colors.background,
+                },
+                headerTintColor: colors.text,
+                headerShown: false, // Có thể customize cho từng page
+            }}
+        >
             <Stack.Screen 
                 name="index" 
                 options={{
-                    title: "Home",
-                    headerStyle: {
-                        backgroundColor: '#f8f9fa',
-                    },
-                    headerTintColor: '#333',
-                    headerTitleStyle: {
-                        fontWeight: 'bold',
-                    },
-                }}
+                    title: "Trang chủ",
+                }} 
             />
+            {/* Có thể thêm các sub-pages của Home ở đây */}
         </Stack>
     );
 }

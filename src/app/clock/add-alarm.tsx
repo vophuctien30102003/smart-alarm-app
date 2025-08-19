@@ -1,27 +1,27 @@
-import { Text } from '@/components/ui/text';
+import { AlarmForm } from '@/components/alarm';
 import { useThemeColor } from '@/theme/useThemeColor';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import { View } from 'react-native';
 
 export default function AddAlarm() {
     const { colors } = useThemeColor();
+    const router = useRouter();
+
+    const handleSave = () => {
+        router.back();
+    };
+
+    const handleCancel = () => {
+        router.back();
+    };
 
     return (
         <View style={{ flex: 1, backgroundColor: colors.background }}>
-            <View className="flex-1 items-center justify-center">
-                <Text 
-                    className="text-xl"
-                    style={{ color: colors.text }}
-                >
-                    Trang thêm báo thức mới
-                </Text>
-                <Text 
-                    className="text-sm mt-2"
-                    style={{ color: colors.textSecondary }}
-                >
-                    (Chức năng sẽ được phát triển sau)
-                </Text>
-            </View>
+            <AlarmForm 
+                onSave={handleSave}
+                onCancel={handleCancel}
+            />
         </View>
     );
 }

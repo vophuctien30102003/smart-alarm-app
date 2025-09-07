@@ -1,9 +1,7 @@
-import { useTheme } from "@/contexts";
+import { colors } from "@/constants";
 import { Stack } from "expo-router";
 
 export default function AlarmClockLayout() {
-    const { colors } = useTheme();
-
     return (
         <Stack
             screenOptions={{
@@ -13,20 +11,6 @@ export default function AlarmClockLayout() {
                 headerTintColor: colors.text,
                 headerShown: false,
             }}
-        >
-            <Stack.Screen
-                name="add-alarm"
-                options={{
-                    title: "Thêm báo thức",
-                    presentation: "modal",
-                }}
-            />
-            <Stack.Screen
-                name="edit-alarm"
-                options={{
-                    title: "Chỉnh sửa báo thức",
-                }}
-            />
-        </Stack>
+        ></Stack>
     );
 }

@@ -1,26 +1,22 @@
 import { Box } from "@/components/ui";
 import { Text } from "@/components/ui/text";
-import { useTheme } from "@/theme/useThemeColor";
+import { colors } from "@/constants";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { useRouter } from "expo-router";
 import React from "react";
 import { ScrollView, TouchableOpacity, View } from "react-native";
 
 export default function HomePage() {
-    const { colors } = useTheme();
-    const router = useRouter();
-
     const quickActions = [
         {
-            title: "Báo thức nhanh",
-            subtitle: "15 phút nữa",
+            title: "Quick Alarm",
+            subtitle: "15 minutes",
             icon: "clock-o",
             color: colors.primary,
             onPress: () => {},
         },
         {
-            title: "Ngủ trưa",
-            subtitle: "30 phút",
+            title: "Nap Time",
+            subtitle: "30 minutes",
             icon: "bed",
             color: colors.success,
             onPress: () => {},
@@ -30,24 +26,24 @@ export default function HomePage() {
     const upcomingAlarms = [
         {
             time: "07:00",
-            label: "Báo thức buổi sáng",
-            remaining: "trong 8 giờ 30 phút",
+            label: "Morning Alarm",
+            remaining: "in 8 hours 30 minutes",
         },
         {
             time: "22:00",
-            label: "Nhắc nhở đi ngủ",
-            remaining: "trong 23 giờ 30 phút",
+            label: "Sleep Reminder",
+            remaining: "in 23 hours 30 minutes",
         },
     ];
 
     return (
-        <View style={{ flex: 1, backgroundColor: colors.background }}>
-            <ScrollView className="flex-1 px-6 py-6">
+        <View className="flex-1 pt-[50px] bg-transparent">
+            <ScrollView className="flex-1 px-6">
                 <Text
                     className="text-xl font-bold mb-4"
                     style={{ color: colors.text }}
                 >
-                    Thao tác nhanh
+                    Quick Actions
                 </Text>
 
                 <View className="flex-row justify-between mb-6">
@@ -94,7 +90,7 @@ export default function HomePage() {
                     className="text-xl font-bold mb-4"
                     style={{ color: colors.text }}
                 >
-                    Báo thức sắp tới
+                    Upcoming Alarms
                 </Text>
 
                 {upcomingAlarms.map((alarm, index) => (

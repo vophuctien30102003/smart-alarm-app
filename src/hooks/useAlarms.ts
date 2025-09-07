@@ -1,14 +1,28 @@
-import { useCallback, useEffect } from 'react';
-import { AppState } from 'react-native';
-import { initializeAlarmSystem, startAlarmChecker, stopAlarmChecker, useAlarmStore } from '../store/alarmStore';
-import { Alarm, WeekDay } from '../types/alarm';
+import { useCallback } from 'react';
+import { useAlarmStore } from '../store/alarmStore';
 
 export const useAlarms = () => {
   const alarms = useAlarmStore(state => state.alarms);
-  const addAlarm = useAlarmStore(state => state.addAlarm);
-  const updateAlarm = useAlarmStore(state => state.updateAlarm);
-  const deleteAlarm = useAlarmStore(state => state.deleteAlarm);
-  const toggleAlarm = useAlarmStore(state => state.toggleAlarm);
+  const _addAlarm = useAlarmStore(state => state.addAlarm);
+  const _updateAlarm = useAlarmStore(state => state.updateAlarm);
+  const _deleteAlarm = useAlarmStore(state => state.deleteAlarm);
+  const _toggleAlarm = useAlarmStore(state => state.toggleAlarm);
+
+  const addAlarm = useCallback(async (alarm: Parameters<typeof _addAlarm>[0]) => {
+    await _addAlarm(alarm);
+  }, [_addAlarm]);
+
+  const updateAlarm = useCallback(async (id: string, updates: Parameters<typeof _updateAlarm>[1]) => {
+    await _updateAlarm(id, updates);
+  }, [_updateAlarm]);
+
+  const deleteAlarm = useCallback(async (id: string) => {
+    await _deleteAlarm(id);
+  }, [_deleteAlarm]);
+
+  const toggleAlarm = useCallback(async (id: string) => {
+    await _toggleAlarm(id);
+  }, [_toggleAlarm]);
 
   return {
     alarms,
@@ -37,18 +51,6 @@ export const useActiveAlarm = () => {
   };
 };
 
-export const useAlarmSounds = () => {
-  const sounds = useAlarmStore(state => state.sounds);
-  const loadSounds = useAlarmStore(state => state.loadSounds);
-  const addCustomSound = useAlarmStore(state => state.addCustomSound);
-
-  return {
-    sounds,
-    loadSounds,
-    addCustomSound,
-  };
-};
-
 export const useAlarmNotifications = () => {
   const scheduleNotifications = useAlarmStore(state => state.scheduleNotifications);
   const cancelNotifications = useAlarmStore(state => state.cancelNotifications);
@@ -69,71 +71,6 @@ export const useAlarmUtils = () => {
   };
 };
 
-// Hook for managing alarm system lifecycle
-export const useAlarmSystem = () => {
-  useEffect(() => {
-    let isInitialized = false;
-
-    const initializeSystem = async () => {
-      if (!isInitialized) {
-        await initializeAlarmSystem();
-        isInitialized = true;
-      }
-    };
-
-    const handleAppStateChange = (nextAppState: string) => {
-      if (nextAppState === 'active') {
-        startAlarmChecker();
-      } else if (nextAppState === 'background' || nextAppState === 'inactive') {
-        // Keep checker running in background for alarms
-        // stopAlarmChecker();
-      }
-    };
-
-    initializeSystem();
-    
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
-
-    return () => {
-      subscription?.remove();
-      stopAlarmChecker();
-    };
-  }, []);
-};
-
-// Hook for creating new alarms with validation
-export const useCreateAlarm = () => {
-  const addAlarm = useAlarmStore(state => state.addAlarm);
-
-  const createAlarm = useCallback((
-    time: string,
-    label: string = '',
-    repeatDays: WeekDay[] = [],
-    soundName: string = 'Classic Bell',
-    volume: number = 1.0,
-    vibrate: boolean = true,
-    snoozeEnabled: boolean = true,
-    snoozeDuration: number = 9
-  ) => {
-    const newAlarm: Omit<Alarm, 'id' | 'createdAt' | 'updatedAt'> = {
-      time,
-      label,
-      isEnabled: true,
-      repeatDays,
-      soundName,
-      volume,
-      vibrate,
-      snoozeEnabled,
-      snoozeDuration,
-    };
-
-    addAlarm(newAlarm);
-  }, [addAlarm]);
-
-  return { createAlarm };
-};
-
-// Hook for getting next alarm info
 export const useNextAlarm = () => {
   const alarms = useAlarmStore(state => state.alarms);
   const getNextAlarmTime = useAlarmStore(state => state.getNextAlarmTime);
@@ -153,7 +90,6 @@ export const useNextAlarm = () => {
   return nextAlarm || null;
 };
 
-// Hook for time validation
 export const useTimeValidation = () => {
   const validateTime = useCallback((time: string): boolean => {
     const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
@@ -161,10 +97,8 @@ export const useTimeValidation = () => {
   }, []);
 
   const formatTimeInput = useCallback((input: string): string => {
-    // Remove non-numeric characters except colon
     const cleaned = input.replace(/[^\d:]/g, '');
     
-    // Ensure proper format
     if (cleaned.length >= 3 && !cleaned.includes(':')) {
       const hours = cleaned.slice(0, 2);
       const minutes = cleaned.slice(2, 4);

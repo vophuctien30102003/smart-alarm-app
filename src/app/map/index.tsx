@@ -4,10 +4,11 @@ import AddLocationModal from "@/components/map/AddLocationModal";
 import FavoriteLocationList from "@/components/map/FavoriteLocationList";
 import LocationHistoryList from "@/components/map/LocationHistoryList";
 import MapViewComponent from "@/components/map/MapViewComponent";
+import { locationHistoryService } from "@/services/locationService";
 import { useLocationStore } from "@/store/locationStore";
 import { LocationType } from "@/types/Location";
-import { Ionicons } from '@expo/vector-icons';
-import { useState } from "react";
+import { Ionicons } from "@expo/vector-icons";
+import { useEffect, useState } from "react";
 import {
     KeyboardAvoidingView,
     Platform,
@@ -20,11 +21,35 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function MapScreen() {
     const [showAddModal, setShowAddModal] = useState(false);
     const [showAlarmForm, setShowAlarmForm] = useState(false);
-    const [selectedLocationForAlarm, setSelectedLocationForAlarm] = useState<LocationType | null>(null);
-    const [activeTab, setActiveTab] = useState<"map" | "favorites" | "history">("map");
-    const [selectedLocation, setSelectedLocation] = useState<LocationType | null>(null);
-    
-    const { favoriteLocations, searchHistory } = useLocationStore();
+    const [selectedLocationForAlarm, setSelectedLocationForAlarm] =
+        useState<LocationType | null>(null);
+    const [activeTab, setActiveTab] = useState<"map" | "favorites" | "history">(
+        "map"
+    );
+    const [selectedLocation, setSelectedLocation] =
+        useState<LocationType | null>(null);
+    const [historyCount, setHistoryCount] = useState(0);
+
+    const { favoriteLocations } = useLocationStore();
+
+    // Load history count for tab display
+    useEffect(() => {
+        const loadHistoryCount = async () => {
+            try {
+                const history = await locationHistoryService.loadLocationHistory();
+                setHistoryCount(history.length);
+            } catch (error) {
+                console.error('Failed to load history count:', error);
+            }
+        };
+        
+        loadHistoryCount();
+        
+        // Reload count when tab becomes active
+        if (activeTab === 'history') {
+            loadHistoryCount();
+        }
+    }, [activeTab]);
 
     const handleCreateAlarmForLocation = (location: LocationType) => {
         setSelectedLocationForAlarm(location);
@@ -44,25 +69,12 @@ export default function MapScreen() {
             case "map":
                 return (
                     <View className="flex-1">
-                        <View className="px-4 py-3 bg-white border-b border-gray-200">
-                            {/* <SearchLocation 
-                                onLocationSelect={handleLocationSelect}
-                                placeholder="Search locations on map..."
-                            /> */}
-                        </View>
-                        
+                        <View className="px-4 py-3 bg-white border-b border-gray-200"></View>
+
                         <View className="flex-1 pb-[50px]">
-                            <MapViewComponent
-                                selectedLocation={selectedLocation || undefined}
-                                onLocationSelect={handleLocationSelect}
-                                showRoute={true}
-                                showCurrentLocation={true}
-                                markers={favoriteLocations}
-                                onMarkerPress={handleMarkerPress}
-                            />
+                            <MapViewComponent />
                         </View>
 
-                        {/* Location Details Bottom Sheet */}
                         {selectedLocation && (
                             <View className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-lg border-t border-gray-200">
                                 <View className="w-12 h-1 bg-gray-300 rounded-full mx-auto mt-3 mb-4" />
@@ -73,26 +85,40 @@ export default function MapScreen() {
                                     <Text className="text-sm text-gray-600 mb-4">
                                         {selectedLocation.address}
                                     </Text>
-                                    
+
                                     <View className="flex-row space-x-3">
                                         <TouchableOpacity
-                                            onPress={() => handleCreateAlarmForLocation(selectedLocation)}
+                                            onPress={() =>
+                                                handleCreateAlarmForLocation(
+                                                    selectedLocation
+                                                )
+                                            }
                                             className="flex-1 bg-blue-500 flex-row items-center justify-center py-3 rounded-lg"
                                         >
-                                            <Ionicons name="alarm" size={18} color="white" />
+                                            <Ionicons
+                                                name="alarm"
+                                                size={18}
+                                                color="white"
+                                            />
                                             <Text className="text-white font-semibold ml-2">
                                                 Create Alarm
                                             </Text>
                                         </TouchableOpacity>
-                                        
+
                                         <TouchableOpacity
                                             onPress={() => {
-                                                setSelectedLocationForAlarm(selectedLocation);
+                                                setSelectedLocationForAlarm(
+                                                    selectedLocation
+                                                );
                                                 setShowAddModal(true);
                                             }}
                                             className="flex-1 bg-green-500 flex-row items-center justify-center py-3 rounded-lg"
                                         >
-                                            <Ionicons name="heart" size={18} color="white" />
+                                            <Ionicons
+                                                name="heart"
+                                                size={18}
+                                                color="white"
+                                            />
                                             <Text className="text-white font-semibold ml-2">
                                                 Save
                                             </Text>
@@ -105,14 +131,14 @@ export default function MapScreen() {
                 );
             case "favorites":
                 return (
-                    <FavoriteLocationList 
+                    <FavoriteLocationList
                         onCreateAlarm={handleCreateAlarmForLocation}
                         onLocationSelect={handleLocationSelect}
                     />
                 );
             case "history":
                 return (
-                    <LocationHistoryList 
+                    <LocationHistoryList
                         onCreateAlarm={handleCreateAlarmForLocation}
                         onLocationSelect={handleLocationSelect}
                     />
@@ -135,12 +161,14 @@ export default function MapScreen() {
                             Location
                         </Text>
                     </View>
-                    
+
                     {/* Quick Actions */}
                     <View className="px-4 pb-3 space-y-2">
                         {/* Location Alarm Status */}
-                        <LocationAlarmStatus onPress={() => setShowAlarmForm(true)} />
-                        
+                        <LocationAlarmStatus
+                            onPress={() => setShowAlarmForm(true)}
+                        />
+
                         <TouchableOpacity
                             onPress={() => setShowAddModal(true)}
                             className="bg-blue-500 flex-row items-center justify-center py-3 rounded-lg"
@@ -150,7 +178,7 @@ export default function MapScreen() {
                                 Add new location
                             </Text>
                         </TouchableOpacity>
-                        
+
                         <TouchableOpacity
                             onPress={() => setShowAlarmForm(true)}
                             className="bg-green-500 flex-row items-center justify-center py-3 rounded-lg"
@@ -161,7 +189,7 @@ export default function MapScreen() {
                             </Text>
                         </TouchableOpacity>
                     </View>
-                    
+
                     {/* Tab Selector */}
                     <View className="flex-row mx-4 mb-3">
                         <TouchableOpacity
@@ -173,10 +201,14 @@ export default function MapScreen() {
                             }`}
                         >
                             <View className="flex-row items-center">
-                                <Ionicons 
-                                    name="map" 
-                                    size={16} 
-                                    color={activeTab === "map" ? "#3B82F6" : "#6B7280"} 
+                                <Ionicons
+                                    name="map"
+                                    size={16}
+                                    color={
+                                        activeTab === "map"
+                                            ? "#3B82F6"
+                                            : "#6B7280"
+                                    }
                                 />
                                 <Text
                                     className={`font-medium ml-1 ${
@@ -199,10 +231,14 @@ export default function MapScreen() {
                             }`}
                         >
                             <View className="flex-row items-center">
-                                <Ionicons 
-                                    name="heart" 
-                                    size={16} 
-                                    color={activeTab === "favorites" ? "#3B82F6" : "#6B7280"} 
+                                <Ionicons
+                                    name="heart"
+                                    size={16}
+                                    color={
+                                        activeTab === "favorites"
+                                            ? "#3B82F6"
+                                            : "#6B7280"
+                                    }
                                 />
                                 <Text
                                     className={`font-medium ml-1 ${
@@ -225,10 +261,14 @@ export default function MapScreen() {
                             }`}
                         >
                             <View className="flex-row items-center">
-                                <Ionicons 
-                                    name="time" 
-                                    size={16} 
-                                    color={activeTab === "history" ? "#3B82F6" : "#6B7280"} 
+                                <Ionicons
+                                    name="time"
+                                    size={16}
+                                    color={
+                                        activeTab === "history"
+                                            ? "#3B82F6"
+                                            : "#6B7280"
+                                    }
                                 />
                                 <Text
                                     className={`font-medium ml-1 ${
@@ -237,7 +277,7 @@ export default function MapScreen() {
                                             : "text-gray-500"
                                     }`}
                                 >
-                                    History ({searchHistory.length})
+                                    History ({historyCount})
                                 </Text>
                             </View>
                         </TouchableOpacity>
@@ -245,9 +285,7 @@ export default function MapScreen() {
                 </View>
 
                 {/* Content Area */}
-                <View className="flex-1">
-                    {renderTabContent()}
-                </View>
+                <View className="flex-1">{renderTabContent()}</View>
 
                 {/* Modals */}
                 <AddLocationModal
@@ -257,7 +295,7 @@ export default function MapScreen() {
                         setSelectedLocationForAlarm(null);
                     }}
                 />
-                
+
                 <LocationAlarmManager
                     visible={showAlarmForm}
                     onClose={() => {

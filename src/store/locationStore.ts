@@ -1,5 +1,4 @@
 import { FavoriteLocationType, LocationType } from "@/types/Location";
-import { generateId } from "@/utils/idUtils";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
@@ -8,14 +7,14 @@ interface LocationStore {
   currentLocation: LocationType | null;
   selectedLocation: LocationType | null;
   favoriteLocations: FavoriteLocationType[];
-  searchHistory: LocationType[];
+  previewLocation: LocationType | null; 
 
   setCurrentLocation: (location: LocationType) => void;
   setSelectedLocation: (location: LocationType) => void;
   addToFavorites: (location: LocationType, label: string, icon?: string) => void;
   removeFromFavorites: (id: string) => void;
-  addToSearchHistory: (location: LocationType) => void;
-  clearSearchHistory: () => void;
+  setPreviewLocation: (location: LocationType | null) => void;
+  clearPreviewLocation: () => void;
   reset: () => void;
 }
 
@@ -25,7 +24,7 @@ export const useLocationStore = create<LocationStore>()(
       currentLocation: null,
       selectedLocation: null,
       favoriteLocations: [],
-      searchHistory: [],
+      previewLocation: null,
 
       setCurrentLocation: (location) => set({ currentLocation: location }),
       setSelectedLocation: (location) => set({ selectedLocation: location }),
@@ -51,29 +50,16 @@ export const useLocationStore = create<LocationStore>()(
           ),
         })),
 
-      addToSearchHistory: (location) =>
-        set((state) => {
-          const currentHistory = state.searchHistory || [];
-          
-          const filtered = currentHistory.filter(
-            (item) => item.id !== location.id
-          );
-          return {
-            searchHistory: [
-              { ...location, id: generateId() },
-              ...filtered,
-            ].slice(0, 10),
-          };
-        }),
+      setPreviewLocation: (location) => set({ previewLocation: location }),
 
-      clearSearchHistory: () => set({ searchHistory: [] }),
+      clearPreviewLocation: () => set({ previewLocation: null }),
 
       reset: () =>
         set({
           currentLocation: null,
           selectedLocation: null,
           favoriteLocations: [],
-          searchHistory: [],
+          previewLocation: null,
         }),
     }),
     {
@@ -81,7 +67,7 @@ export const useLocationStore = create<LocationStore>()(
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         favoriteLocations: state.favoriteLocations,
-        searchHistory: state.searchHistory,
+        // previewLocation is temporary, don't persist it
       }),
     }
   )

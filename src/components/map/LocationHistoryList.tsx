@@ -1,7 +1,7 @@
-import { useLocationStore } from '@/store/locationStore';
+import { locationHistoryService } from '@/services/locationService';
 import { LocationType } from '@/types/Location';
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -16,7 +16,24 @@ interface LocationHistoryListProps {
 }
 
 export default function LocationHistoryList({ onLocationSelect, onCreateAlarm }: LocationHistoryListProps) {
-  const { searchHistory, clearSearchHistory } = useLocationStore();
+  const [locationHistory, setLocationHistory] = useState<LocationType[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    loadLocationHistory();
+  }, []);
+
+  const loadLocationHistory = async () => {
+    try {
+      setLoading(true);
+      const history = await locationHistoryService.loadLocationHistory();
+      setLocationHistory(history);
+    } catch (error) {
+      console.error('Failed to load location history:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLongPress = (item: LocationType) => {
     Alert.alert(
@@ -31,6 +48,43 @@ export default function LocationHistoryList({ onLocationSelect, onCreateAlarm }:
         {
           text: 'Select',
           onPress: () => onLocationSelect?.(item)
+        },
+        {
+          text: 'Remove from History',
+          style: 'destructive',
+          onPress: () => handleRemoveFromHistory(item.id)
+        }
+      ]
+    );
+  };
+
+  const handleRemoveFromHistory = async (locationId: string) => {
+    try {
+      await locationHistoryService.removeLocationFromHistory(locationId);
+      // Reload the list
+      await loadLocationHistory();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to remove location from history');
+    }
+  };
+
+  const handleClearHistory = () => {
+    Alert.alert(
+      'Clear History',
+      'Are you sure you want to clear all location history? This will remove all locations where alarms have been set.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await locationHistoryService.clearLocationHistory();
+              setLocationHistory([]);
+            } catch (error) {
+              Alert.alert('Error', 'Failed to clear location history');
+            }
+          }
         }
       ]
     );
@@ -78,10 +132,10 @@ export default function LocationHistoryList({ onLocationSelect, onCreateAlarm }:
     <View className="flex-1 items-center justify-center py-12">
       <Ionicons name="time" size={48} color="#9CA3AF" />
       <Text className="text-lg font-medium text-gray-500 mt-4">
-        No search history
+        No alarm history
       </Text>
       <Text className="text-sm text-gray-400 mt-2 text-center px-8">
-        Your recently searched locations will appear here
+        Locations where you&apos;ve set alarms will appear here
       </Text>
     </View>
   );
@@ -90,11 +144,11 @@ export default function LocationHistoryList({ onLocationSelect, onCreateAlarm }:
     <View className="flex-1">
       <View className="flex-row items-center justify-between p-4 border-b border-gray-200">
         <Text className="text-lg font-semibold text-gray-900">
-          Search History ({searchHistory.length})
+          Alarm History ({locationHistory.length})
         </Text>
-        {searchHistory.length > 0 && (
+        {locationHistory.length > 0 && (
           <TouchableOpacity 
-            onPress={clearSearchHistory}
+            onPress={handleClearHistory}
             className="bg-red-100 px-3 py-1 rounded-full"
           >
             <Text className="text-red-600 text-sm font-medium">Clear</Text>
@@ -103,7 +157,7 @@ export default function LocationHistoryList({ onLocationSelect, onCreateAlarm }:
       </View>
 
       <FlatList
-        data={searchHistory}
+        data={locationHistory}
         renderItem={renderHistoryItem}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}

@@ -1,21 +1,22 @@
 import LocationAlarmService from '@/lib/LocationAlarmService';
+import { locationHistoryService } from '@/services/locationService';
 import { useAlarmStore } from '@/store/alarmStore';
 import { useLocationStore } from '@/store/locationStore';
 import { LocationType } from '@/types/Location';
-import SearchLocation from '@/utils/searchLocationUtils';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Modal,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Modal,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import SearchLocation from '../searchLocations';
 
 interface LocationAlarmManagerProps {
   visible: boolean;
@@ -97,6 +98,14 @@ export default function LocationAlarmManager({
         radiusMeters: radius,
         arrivalTrigger,
       });
+
+      // Save location to history after successful alarm creation
+      try {
+        await locationHistoryService.saveLocationToHistory(currentLocation);
+      } catch (historyError) {
+        console.error('Failed to save location to history:', historyError);
+        // Don't fail the alarm creation if history save fails
+      }
 
       Alert.alert(
         'Success', 
@@ -503,7 +512,6 @@ export default function LocationAlarmManager({
 
         {currentMode === 'create' ? renderCreateForm() : renderManageView()}
 
-        {/* Location Picker Modal */}
         <Modal visible={showLocationPicker} animationType="slide">
           <View className="flex-1 bg-white">
             <View className="flex-row items-center justify-between p-4 border-b border-gray-200">

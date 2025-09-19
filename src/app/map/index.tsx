@@ -2,7 +2,7 @@ import AddLocationModal from "@/components/map/AddLocationModal";
 import FavoriteLocationList from "@/components/map/FavoriteLocationList";
 import LocationHistoryList from "@/components/map/LocationHistoryList";
 import MapViewComponent from "@/components/map/MapViewComponent";
-import { locationHistoryService } from "@/services/locationService";
+import { locationService } from "@/services/LocationService";
 import { useLocationStore } from "@/store/locationStore";
 import { LocationType } from "@/types/Location";
 import { Ionicons } from "@expo/vector-icons";
@@ -32,8 +32,7 @@ export default function MapScreen() {
     useEffect(() => {
         const loadHistoryCount = async () => {
             try {
-                const history =
-                    await locationHistoryService.loadLocationHistory();
+                const history = await locationService.loadLocationHistory();
                 setHistoryCount(history.length);
             } catch (error) {
                 console.error("Failed to load history count:", error);

@@ -2,15 +2,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import LocationAlarmService from '../lib/LocationAlarmService';
-import notificationManager from '../lib/NotificationManager';
 import { WeekDay } from '../prototype/enum/day.enum';
+import { locationService } from '../services/LocationService';
+import notificationManager from '../services/NotificationManager';
 import { Alarm, AlarmStore } from '../types/AlarmClock';
 import { LocationType } from '../types/Location';
 import { formatDistance, formatDuration, getDirections } from '../utils/directionsRouteUtils';
 import { generateTimestampId } from '../utils/idUtils';
-
-const locationService = LocationAlarmService.getInstance();
 
 const MAX_SNOOZE_COUNT = 3;
 const DEFAULT_SNOOZE_DURATION = 5;

@@ -1,8 +1,12 @@
 import { Alarm } from '@/types/AlarmClock';
+import { LocationType } from '@/types/Location';
 import { calculateDistance } from '@/utils/calculateDistanceUtils';
 import { getDirections } from '@/utils/directionsRouteUtils';
 import * as Location from 'expo-location';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import notificationManager from './NotificationManager';
+
+const LOCATION_HISTORY_KEY = 'location_history';
 
 export interface LocationAlarmConfig {
   alarm: Alarm;
@@ -12,21 +16,29 @@ export interface LocationAlarmConfig {
   estimatedArrivalTime?: number;
 }
 
-class LocationAlarmService {
-  private static instance: LocationAlarmService;
+export interface LocationHistoryServiceProps {
+  saveLocationToHistory: (location: LocationType) => Promise<void>;
+  loadLocationHistory: () => Promise<LocationType[]>;
+  clearLocationHistory: () => Promise<void>;
+  removeLocationFromHistory: (locationId: string) => Promise<void>;
+}
+
+export class LocationService implements LocationHistoryServiceProps {
+  private static instance: LocationService;
   private activeLocationAlarms: Map<string, LocationAlarmConfig> = new Map();
   private locationSubscription: Location.LocationSubscription | null = null;
   private isTracking = false;
   private onAlarmTrigger: ((alarm: Alarm) => void) | null = null;
 
-  static getInstance(): LocationAlarmService {
-    if (!LocationAlarmService.instance) {
-      LocationAlarmService.instance = new LocationAlarmService();
+  static getInstance(): LocationService {
+    if (!LocationService.instance) {
+      LocationService.instance = new LocationService();
     }
-    return LocationAlarmService.instance;
+    return LocationService.instance;
   }
 
-  setAlarmTriggerCallback(callback: (alarm: Alarm) => void) {
+  
+  setAlarmTriggerCallback(callback: (alarm: Alarm) => void): void {
     this.onAlarmTrigger = callback;
   }
 
@@ -71,6 +83,29 @@ class LocationAlarmService {
     console.log('Location tracking stopped');
   }
 
+  isLocationTrackingActive(): boolean {
+    return this.isTracking;
+  }
+
+  async getCurrentLocation(): Promise<Location.LocationObject | null> {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        throw new Error('Location permission not granted');
+      }
+
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      return location;
+    } catch (error) {
+      console.error('Failed to get current location:', error);
+      return null;
+    }
+  }
+
+
   addLocationAlarm(alarm: Alarm): void {
     if (!alarm.isLocationBased || !alarm.targetLocation) {
       console.warn('Attempted to add non-location alarm to location tracking');
@@ -101,6 +136,72 @@ class LocationAlarmService {
 
     console.log(`Updated location alarms. Active count: ${this.activeLocationAlarms.size}`);
   }
+
+  getActiveLocationAlarms(): LocationAlarmConfig[] {
+    return Array.from(this.activeLocationAlarms.values());
+  }
+
+  getLocationAlarmStatus(alarmId: string): LocationAlarmConfig | null {
+    return this.activeLocationAlarms.get(alarmId) || null;
+  }
+
+
+  async saveLocationToHistory(location: LocationType): Promise<void> {
+    try {
+      const existingHistory = await this.loadLocationHistory();
+     
+      const filteredHistory = existingHistory.filter(
+        (item) => 
+          item.id !== location.id && 
+          !(item.coordinates.latitude === location.coordinates.latitude && 
+            item.coordinates.longitude === location.coordinates.longitude)
+      );
+      
+      const updatedHistory = [location, ...filteredHistory].slice(0, 20);
+      
+      await AsyncStorage.setItem(LOCATION_HISTORY_KEY, JSON.stringify(updatedHistory));
+    } catch (error) {
+      console.error('Failed to save location to history:', error);
+      throw new Error('Failed to save location to history');
+    }
+  }
+
+  async loadLocationHistory(): Promise<LocationType[]> {
+    try {
+      const historyJson = await AsyncStorage.getItem(LOCATION_HISTORY_KEY);
+      if (!historyJson) {
+        return [];
+      }
+      
+      const history = JSON.parse(historyJson);
+      return Array.isArray(history) ? history : [];
+    } catch (error) {
+      console.error('Failed to load location history:', error);
+      return [];
+    }
+  }
+
+  async clearLocationHistory(): Promise<void> {
+    try {
+      await AsyncStorage.removeItem(LOCATION_HISTORY_KEY);
+    } catch (error) {
+      console.error('Failed to clear location history:', error);
+      throw new Error('Failed to clear location history');
+    }
+  }
+
+  async removeLocationFromHistory(locationId: string): Promise<void> {
+    try {
+      const existingHistory = await this.loadLocationHistory();
+      const updatedHistory = existingHistory.filter(item => item.id !== locationId);
+      
+      await AsyncStorage.setItem(LOCATION_HISTORY_KEY, JSON.stringify(updatedHistory));
+    } catch (error) {
+      console.error('Failed to remove location from history:', error);
+      throw new Error('Failed to remove location from history');
+    }
+  }
+
 
   private async handleLocationUpdate(location: Location.LocationObject): Promise<void> {
     for (const [alarmId, config] of this.activeLocationAlarms) {
@@ -177,36 +278,7 @@ class LocationAlarmService {
       this.removeLocationAlarm(alarm.id);
     }
   }
-
-  getActiveLocationAlarms(): LocationAlarmConfig[] {
-    return Array.from(this.activeLocationAlarms.values());
-  }
-
-  getLocationAlarmStatus(alarmId: string): LocationAlarmConfig | null {
-    return this.activeLocationAlarms.get(alarmId) || null;
-  }
-
-  isLocationTrackingActive(): boolean {
-    return this.isTracking;
-  }
-
-  async getCurrentLocation(): Promise<Location.LocationObject | null> {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        throw new Error('Location permission not granted');
-      }
-
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
-
-      return location;
-    } catch (error) {
-      console.error('Failed to get current location:', error);
-      return null;
-    }
-  }
 }
 
-export default LocationAlarmService;
+export const locationService = LocationService.getInstance();
+export default locationService;

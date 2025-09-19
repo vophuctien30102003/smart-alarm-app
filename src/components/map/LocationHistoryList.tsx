@@ -1,4 +1,4 @@
-import { locationHistoryService } from '@/services/locationService';
+import { locationService } from '@/services/LocationService';
 import { LocationType } from '@/types/Location';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
@@ -26,7 +26,7 @@ export default function LocationHistoryList({ onLocationSelect, onCreateAlarm }:
   const loadLocationHistory = async () => {
     try {
       setLoading(true);
-      const history = await locationHistoryService.loadLocationHistory();
+      const history = await locationService.loadLocationHistory();
       setLocationHistory(history);
     } catch (error) {
       console.error('Failed to load location history:', error);
@@ -60,7 +60,7 @@ export default function LocationHistoryList({ onLocationSelect, onCreateAlarm }:
 
   const handleRemoveFromHistory = async (locationId: string) => {
     try {
-      await locationHistoryService.removeLocationFromHistory(locationId);
+      await locationService.removeLocationFromHistory(locationId);
       // Reload the list
       await loadLocationHistory();
     } catch (error) {
@@ -79,7 +79,7 @@ export default function LocationHistoryList({ onLocationSelect, onCreateAlarm }:
           style: 'destructive',
           onPress: async () => {
             try {
-              await locationHistoryService.clearLocationHistory();
+              await locationService.clearLocationHistory();
               setLocationHistory([]);
             } catch (error) {
               Alert.alert('Error', 'Failed to clear location history');

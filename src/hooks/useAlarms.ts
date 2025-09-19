@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useAlarmStore } from '../store/alarmStore';
 
 export const useAlarms = () => {
@@ -9,23 +9,50 @@ export const useAlarms = () => {
   const _toggleAlarm = useAlarmStore(state => state.toggleAlarm);
 
   const addAlarm = useCallback(async (alarm: Parameters<typeof _addAlarm>[0]) => {
-    await _addAlarm(alarm);
+    try {
+      await _addAlarm(alarm);
+    } catch (error) {
+      console.error('Failed to add alarm:', error);
+      throw error;
+    }
   }, [_addAlarm]);
 
   const updateAlarm = useCallback(async (id: string, updates: Parameters<typeof _updateAlarm>[1]) => {
-    await _updateAlarm(id, updates);
+    try {
+      await _updateAlarm(id, updates);
+    } catch (error) {
+      console.error('Failed to update alarm:', error);
+      throw error;
+    }
   }, [_updateAlarm]);
 
   const deleteAlarm = useCallback(async (id: string) => {
-    await _deleteAlarm(id);
+    try {
+      await _deleteAlarm(id);
+    } catch (error) {
+      console.error('Failed to delete alarm:', error);
+      throw error;
+    }
   }, [_deleteAlarm]);
 
   const toggleAlarm = useCallback(async (id: string) => {
-    await _toggleAlarm(id);
+    try {
+      await _toggleAlarm(id);
+    } catch (error) {
+      console.error('Failed to toggle alarm:', error);
+      throw error;
+    }
   }, [_toggleAlarm]);
 
+  const sortedAlarms = useMemo(() => {
+    return [...alarms].sort((a, b) => {
+      // Sort by time
+      return a.time.localeCompare(b.time);
+    });
+  }, [alarms]);
+
   return {
-    alarms,
+    alarms: sortedAlarms,
     addAlarm,
     updateAlarm,
     deleteAlarm,
@@ -90,26 +117,71 @@ export const useNextAlarm = () => {
   return nextAlarm || null;
 };
 
-export const useTimeValidation = () => {
-  const validateTime = useCallback((time: string): boolean => {
+export const useAlarmValidation = () => {
+  const validateAlarmTime = useCallback((time: string): boolean => {
     const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
     return timeRegex.test(time);
   }, []);
 
-  const formatTimeInput = useCallback((input: string): string => {
-    const cleaned = input.replace(/[^\d:]/g, '');
-    
-    if (cleaned.length >= 3 && !cleaned.includes(':')) {
-      const hours = cleaned.slice(0, 2);
-      const minutes = cleaned.slice(2, 4);
-      return `${hours}:${minutes}`;
-    }
-    
-    return cleaned;
+  const validateAlarmLabel = useCallback((label: string): boolean => {
+    return label.trim().length > 0 && label.trim().length <= 50;
   }, []);
 
+  const validateAlarmData = useCallback((alarm: {
+    time: string;
+    label: string;
+    volume?: number;
+    snoozeDuration?: number;
+  }): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+
+    if (!validateAlarmTime(alarm.time)) {
+      errors.push('Invalid time format');
+    }
+
+    if (!validateAlarmLabel(alarm.label)) {
+      errors.push('Label must be 1-50 characters long');
+    }
+
+    if (alarm.volume !== undefined && (alarm.volume < 0 || alarm.volume > 1)) {
+      errors.push('Volume must be between 0 and 1');
+    }
+
+    if (alarm.snoozeDuration !== undefined && alarm.snoozeDuration < 1) {
+      errors.push('Snooze duration must be at least 1 minute');
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  }, [validateAlarmTime, validateAlarmLabel]);
+
   return {
-    validateTime,
-    formatTimeInput,
+    validateAlarmTime,
+    validateAlarmLabel,
+    validateAlarmData,
   };
+};
+
+export const useAlarmStats = () => {
+  const alarms = useAlarmStore(state => state.alarms);
+
+  const stats = useMemo(() => {
+    const totalAlarms = alarms.length;
+    const enabledAlarms = alarms.filter(alarm => alarm.isEnabled).length;
+    const disabledAlarms = totalAlarms - enabledAlarms;
+    const locationBasedAlarms = alarms.filter(alarm => alarm.isLocationBased).length;
+    const timeBasedAlarms = totalAlarms - locationBasedAlarms;
+
+    return {
+      totalAlarms,
+      enabledAlarms,
+      disabledAlarms,
+      locationBasedAlarms,
+      timeBasedAlarms,
+    };
+  }, [alarms]);
+
+  return stats;
 };

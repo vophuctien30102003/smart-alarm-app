@@ -1,4 +1,3 @@
-// import LocationAlarmProvider from "@/components/alarm/LocationAlarmProvider";
 import TabNavigation from "@/components/navigation/TabNavigation";
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import { NotificationProvider } from "@/contexts/NotificationProvider";
@@ -13,9 +12,8 @@ const MemoizedTabNavigation = memo(TabNavigation);
 export default function RootLayoutNav() {
     return (
         <NotificationProvider>
-            {/* <LocationAlarmProvider> */}
-                <GluestackUIProvider mode={"light"}>
-                    <View style={{ flex: 1 }}>
+            <GluestackUIProvider mode={"light"}>
+                    <View className="min-h-screen flex-1 bg-tab-bottom">
                         <Stack>
                             <Stack.Screen
                                 name="index"
@@ -40,7 +38,9 @@ export default function RootLayoutNav() {
                         </Stack>
                         <MemoizedTabNavigation />
                     </View>
-                </GluestackUIProvider>
+            </GluestackUIProvider>
         </NotificationProvider>
     );
 }
+
+

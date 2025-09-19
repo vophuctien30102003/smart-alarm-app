@@ -1,43 +1,43 @@
 
 import { Href } from "expo-router";
-import FontAwesome from "@expo/vector-icons/FontAwesome";
-
-type IconType = keyof typeof FontAwesome.glyphMap;
+import { Home, Map, Notification, ProfileCircle } from 'iconsax-react-native';
+import { ComponentType } from 'react';
 
 export interface NavigationItem {
     name: string;
-    title: string;
-    headerTitle: string;
-    icon: IconType;
+    label: string;
+    icon: ComponentType<any>;
     route: Href;
+    testID: string;
 }
+
 export const navigationItems: NavigationItem[] = [
     {
         name: "home",
-        title: "Home",
-        headerTitle: "Smart Alarm",
-        icon: "home",
-        route: "/home",
-    },
-    {
-        name: "clock",
-        title: "Alarm",
-        headerTitle: "My Alarms",
-        icon: "bell-o",
-        route: "/clock",
+        label: "Home",
+        icon: Home,
+        route: "/home" as Href,
+        testID: "tab-home",
     },
     {
         name: "map",
-        title: "Map",
-        headerTitle: "Location-Based Alarms",
-        icon: "map-o",
-        route: "/map",
+        label: "Map", 
+        icon: Map,
+        route: "/map" as Href,
+        testID: "tab-map",
+    },
+    {
+        name: "clock",
+        label: "Alarm",
+        icon: Notification,
+        route: "/clock" as Href,
+        testID: "tab-clock",
     },
     {
         name: "settings",
-        title: "Settings",
-        headerTitle: "App Settings",
-        icon: "cog",
-        route: "/settings",
+        label: "Profile",
+        icon: ProfileCircle,
+        route: "/settings" as Href,
+        testID: "tab-settings",
     },
 ];

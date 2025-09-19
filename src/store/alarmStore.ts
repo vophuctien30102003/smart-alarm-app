@@ -12,6 +12,10 @@ import { generateTimestampId } from '../utils/idUtils';
 
 const locationService = LocationAlarmService.getInstance();
 
+const MAX_SNOOZE_COUNT = 3;
+const DEFAULT_SNOOZE_DURATION = 5;
+const DEFAULT_VOLUME = 0.8;
+
 export const useAlarmStore = create<AlarmStore>()(
   persist(
     (set, get) => ({
@@ -22,113 +26,106 @@ export const useAlarmStore = create<AlarmStore>()(
       snoozeCount: 0,
 
       addAlarm: async (alarm: Omit<Alarm, 'id' | 'createdAt' | 'updatedAt'>) => {
-        const newAlarm: Alarm = {
-          ...alarm,
-          id: generateTimestampId(),
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
+        try {
+          const newAlarm: Alarm = {
+            ...alarm,
+            id: generateTimestampId(),
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            volume: alarm.volume || DEFAULT_VOLUME,
+            snoozeDuration: alarm.snoozeDuration || DEFAULT_SNOOZE_DURATION,
+          };
 
-        set((state) => ({
-          alarms: [...state.alarms, newAlarm],
-        }));
+          set((state) => ({
+            alarms: [...state.alarms, newAlarm],
+          }));
 
-        if (newAlarm.isEnabled) {
-          if (newAlarm.isLocationBased && newAlarm.targetLocation) {
-            // Add to location tracking
-            locationService.addLocationAlarm(newAlarm);
-            
-            // Start location tracking if not already started
-            try {
-              await locationService.startLocationTracking();
-              locationService.setAlarmTriggerCallback((triggeredAlarm) => {
-                get().triggerAlarm(triggeredAlarm);
-              });
-            } catch (error) {
-              console.error('Failed to start location tracking:', error);
-              Alert.alert('Location Error', 'Failed to start location tracking for alarm');
-            }
-          } else {
-            // Schedule regular time-based notification
-            const notificationId = await notificationManager.scheduleAlarmNotification(newAlarm);
-            if (notificationId) {
-              set((state) => ({
-                alarms: state.alarms.map(a => 
-                  a.id === newAlarm.id 
-                    ? { ...a, notificationId } 
-                    : a
-                ),
-              }));
-            }
+          if (newAlarm.isEnabled) {
+            await get().setupAlarmNotifications(newAlarm);
+          }
+        } catch (error) {
+          console.error('Failed to add alarm:', error);
+          throw error;
+        }
+      },
+
+      setupAlarmNotifications: async (alarm: Alarm) => {
+        if (alarm.isLocationBased && alarm.targetLocation) {
+          locationService.addLocationAlarm(alarm);
+          
+          try {
+            await locationService.startLocationTracking();
+            locationService.setAlarmTriggerCallback((triggeredAlarm) => {
+              get().triggerAlarm(triggeredAlarm);
+            });
+          } catch (error) {
+            console.error('Failed to start location tracking:', error);
+            Alert.alert('Location Error', 'Failed to start location tracking for alarm');
+          }
+        } else {
+          const notificationId = await notificationManager.scheduleAlarmNotification(alarm);
+          if (notificationId) {
+            set((state) => ({
+              alarms: state.alarms.map(a => 
+                a.id === alarm.id 
+                  ? { ...a, notificationId } 
+                  : a
+              ),
+            }));
           }
         }
       },
 
       updateAlarm: async (id: string, updates: Partial<Alarm>) => {
+        try {
         const alarm = get().alarms.find(a => a.id === id);
         if (!alarm) return;
 
-        // Cancel existing notifications/tracking
+        await get().cleanupAlarmNotifications(alarm);          const updatedAlarm = {
+            ...alarm,
+            ...updates,
+            updatedAt: new Date(),
+          };
+
+          set((state) => ({
+            alarms: state.alarms.map((a) =>
+              a.id === id ? updatedAlarm : a
+            ),
+          }));
+
+          // Re-setup notifications/tracking if enabled
+          if (updatedAlarm.isEnabled) {
+            await get().setupAlarmNotifications(updatedAlarm);
+          }
+        } catch (error) {
+          console.error('Failed to update alarm:', error);
+          throw error;
+        }
+      },
+
+      cleanupAlarmNotifications: async (alarm: Alarm) => {
         if (alarm.notificationId) {
           await notificationManager.cancelAlarmNotification(alarm.notificationId);
         }
         if (alarm.isLocationBased) {
-          locationService.removeLocationAlarm(id);
-        }
-
-        const updatedAlarm = {
-          ...alarm,
-          ...updates,
-          updatedAt: new Date(),
-        };
-
-        set((state) => ({
-          alarms: state.alarms.map((a) =>
-            a.id === id ? updatedAlarm : a
-          ),
-        }));
-
-        // Re-setup notifications/tracking
-        if (updatedAlarm.isEnabled) {
-          if (updatedAlarm.isLocationBased && updatedAlarm.targetLocation) {
-            locationService.addLocationAlarm(updatedAlarm);
-            try {
-              await locationService.startLocationTracking();
-            } catch (error) {
-              console.error('Failed to start location tracking:', error);
-            }
-          } else {
-            const notificationId = await notificationManager.scheduleAlarmNotification(updatedAlarm);
-            if (notificationId) {
-              set((state) => ({
-                alarms: state.alarms.map(a => 
-                  a.id === id 
-                    ? { ...a, notificationId } 
-                    : a
-                ),
-              }));
-            }
-          }
+          locationService.removeLocationAlarm(alarm.id);
         }
       },
 
       deleteAlarm: async (id: string) => {
-        const alarm = get().alarms.find(a => a.id === id);
-        if (alarm) {
-          // Cancel notification if exists
-          if (alarm.notificationId) {
-            await notificationManager.cancelAlarmNotification(alarm.notificationId);
+        try {
+          const alarm = get().alarms.find(a => a.id === id);
+          if (alarm) {
+            await get().cleanupAlarmNotifications(alarm);
           }
-          
-          // Remove from location tracking if location-based
-          if (alarm.isLocationBased) {
-            locationService.removeLocationAlarm(id);
-          }
-        }
 
-        set((state) => ({
-          alarms: state.alarms.filter((a) => a.id !== id),
-        }));
+          set((state) => ({
+            alarms: state.alarms.filter((a) => a.id !== id),
+          }));
+        } catch (error) {
+          console.error('Failed to delete alarm:', error);
+          throw error;
+        }
       },
 
       toggleAlarm: async (id: string) => {
@@ -139,18 +136,14 @@ export const useAlarmStore = create<AlarmStore>()(
       },
 
       triggerAlarm: (alarm: Alarm) => {
+        if ((globalThis as any).snoozeTimeout) {
+          clearTimeout((globalThis as any).snoozeTimeout);
+          delete (globalThis as any).snoozeTimeout;
+        }
+
         set({
           activeAlarm: alarm,
           isPlaying: true,
-          isSnoozed: false,
-          snoozeCount: 0,
-        });
-      },
-
-      stopAlarm: () => {
-        set({
-          activeAlarm: null,
-          isPlaying: false,
           isSnoozed: false,
           snoozeCount: 0,
         });
@@ -160,7 +153,7 @@ export const useAlarmStore = create<AlarmStore>()(
         const { activeAlarm, snoozeCount } = get();
         if (!activeAlarm) return;
 
-        const maxSnooze = activeAlarm.maxSnoozeCount || 3;
+        const maxSnooze = activeAlarm.maxSnoozeCount || MAX_SNOOZE_COUNT;
         if (snoozeCount >= maxSnooze) {
           get().stopAlarm();
           return;
@@ -172,13 +165,28 @@ export const useAlarmStore = create<AlarmStore>()(
           snoozeCount: snoozeCount + 1,
         });
 
-        // Schedule snooze notification
-        setTimeout(() => {
+        const snoozeTimeout = setTimeout(() => {
           const currentState = get();
           if (currentState.isSnoozed && currentState.activeAlarm?.id === activeAlarm.id) {
             get().triggerAlarm(activeAlarm);
           }
-        }, (activeAlarm.snoozeDuration || 5) * 60 * 1000);
+        }, (activeAlarm.snoozeDuration || DEFAULT_SNOOZE_DURATION) * 60 * 1000);
+
+        (globalThis as any).snoozeTimeout = snoozeTimeout;
+      },
+
+      stopAlarm: () => {
+        if ((globalThis as any).snoozeTimeout) {
+          clearTimeout((globalThis as any).snoozeTimeout);
+          delete (globalThis as any).snoozeTimeout;
+        }
+
+        set({
+          activeAlarm: null,
+          isPlaying: false,
+          isSnoozed: false,
+          snoozeCount: 0,
+        });
       },
 
       scheduleNotifications: async (alarm: Alarm) => {
@@ -206,12 +214,10 @@ export const useAlarmStore = create<AlarmStore>()(
         const alarmDate = new Date(now);
         alarmDate.setHours(hours, minutes, 0, 0);
 
-        // If alarm time has passed today, set for tomorrow
         if (alarmDate <= now) {
           alarmDate.setDate(alarmDate.getDate() + 1);
         }
 
-        // Handle repeat days
         if (alarm.repeatDays.length > 0) {
           const currentDay = alarmDate.getDay();
           const daysUntilNext = alarm.repeatDays
@@ -258,11 +264,9 @@ export const useAlarmStore = create<AlarmStore>()(
         locationService.updateLocationAlarms(alarms);
       },
 
-      // Smart arrival prediction
       getArrivalTimeEstimate: async (targetLocation: LocationType, currentPosition?: { latitude: number; longitude: number }) => {
         try {
           if (!currentPosition) {
-            // Get current position if not provided
             const currentLocation = await locationService.getCurrentLocation();
             if (!currentLocation) return null;
             currentPosition = {
@@ -287,8 +291,6 @@ export const useAlarmStore = create<AlarmStore>()(
           return null;
         }
       },
-
-      // Enhanced location alarm with smart triggering
       getLocationAlarmStatus: (alarmId: string) => {
         return locationService.getLocationAlarmStatus(alarmId);
       },
@@ -303,7 +305,6 @@ export const useAlarmStore = create<AlarmStore>()(
   )
 );
 
-// Initialize location service callback
 locationService.setAlarmTriggerCallback((alarm) => {
   useAlarmStore.getState().triggerAlarm(alarm);
 });

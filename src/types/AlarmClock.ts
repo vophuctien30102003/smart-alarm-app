@@ -57,6 +57,8 @@ export interface AlarmActions {
   stopAlarm: () => void;
   snoozeAlarm: () => void;
 
+  setupAlarmNotifications: (alarm: Alarm) => Promise<void>;
+  cleanupAlarmNotifications: (alarm: Alarm) => Promise<void>;
   scheduleNotifications: (alarm: Alarm) => Promise<void>;
   cancelNotifications: (alarmId: string) => Promise<void>;
 

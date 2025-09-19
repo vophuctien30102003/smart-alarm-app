@@ -1,16 +1,17 @@
 import { colors } from "@/constants";
 import { Stack } from "expo-router";
+import { View } from "react-native";
 
 export default function AlarmClockLayout() {
     return (
-        <Stack
-            screenOptions={{
-                headerStyle: {
-                    backgroundColor: colors.background,
-                },
-                headerTintColor: colors.text,
-                headerShown: false,
-            }}
-        ></Stack>
+            <Stack
+                screenOptions={{
+                    headerStyle: {
+                        backgroundColor: colors.background,
+                    },
+                    headerTintColor: colors.text,
+                    headerShown: false,
+                }}
+            ></Stack>
     );
 }

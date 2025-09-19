@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { useAudioManager } from "../hooks/useAudioManager";
 import { Sound } from "../types/Sound";
@@ -7,33 +8,55 @@ interface ListAudioProps {
     onSoundSelect?: (sound: Sound) => void;
     selectedSoundId?: string;
     showPlayButton?: boolean;
+    previewMode?: boolean;
+    onSoundPreview?: (sound: Sound | null) => void; 
 }
 
 export default function ListAudio({ 
     onSoundSelect, 
     selectedSoundId, 
-    showPlayButton = true 
+    showPlayButton = true,
+    previewMode = false,
+    onSoundPreview
 }: ListAudioProps) {
     const { sounds, playSound, stopPlaying, currentSound, isPlaying } = useAudioManager();
+    const [previewingSound, setPreviewingSound] = useState<Sound | null>(null);
 
-    const handleSoundPress = (sound: Sound) => {
-        if (onSoundSelect) {
-            onSoundSelect(sound);
+    useEffect(() => {
+        if (previewMode && onSoundPreview) {
+            onSoundPreview(previewingSound);
         }
-        if (showPlayButton) {
+    }, [previewingSound, previewMode, onSoundPreview]);
+
+    const handleSoundPress = useCallback((sound: Sound) => {
+        if (previewMode) {
             if (currentSound?.id === sound.id && isPlaying) {
                 stopPlaying();
+                setPreviewingSound(null);
             } else {
                 playSound(sound);
+                setPreviewingSound(sound);
+            }
+        } else {
+            if (onSoundSelect) {
+                onSoundSelect(sound);
+            }
+            if (showPlayButton) {
+                if (currentSound?.id === sound.id && isPlaying) {
+                    stopPlaying();
+                } else {
+                    playSound(sound);
+                }
             }
         }
-    };
+    }, [previewMode, currentSound, isPlaying, stopPlaying, playSound, onSoundSelect, showPlayButton]);
 
     return (
         <View className="flex w-full">
             {sounds.map((sound) => {
                 const isSelected = selectedSoundId === sound.id;
                 const isCurrentlyPlaying = currentSound?.id === sound.id && isPlaying;
+                const isPreviewing = previewMode && previewingSound?.id === sound.id;
                 
                 return (
                     <TouchableOpacity
@@ -42,7 +65,9 @@ export default function ListAudio({
                         onPress={() => handleSoundPress(sound)}
                     >
                         <View className="flex-1">
-                            <Text className="text-white text-lg">
+                            <Text className={`text-lg ${
+                                isPreviewing ? 'text-orange-500' : 'text-white'
+                            }`}>
                                 {sound.title}
                             </Text>
                         </View>
@@ -62,7 +87,7 @@ export default function ListAudio({
                             </Button>
                         )}
                         
-                        {isSelected && (
+                        {(isSelected || (!previewMode && isSelected)) && (
                             <Text className="text-orange-500 text-lg">✓</Text>
                         )}
                     </TouchableOpacity>

@@ -6,7 +6,7 @@ import React, { useEffect, useRef } from "react";
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const SF_ZOOM = 12;
+const SF_ZOOM = 15;
 
 export default function MapViewScreen() {
   const ref = useRef<AppleMaps.MapView | GoogleMaps.MapView>(null);
@@ -33,7 +33,7 @@ export default function MapViewScreen() {
       longitude: currentLocation.longitude 
     },
     title: "Vị trí hiện tại",
-    snippet: "Bạn đang ở đây",
+    snippet: "vị trí hiện tại",
     draggable: false,
   }] : [];
 
@@ -43,7 +43,7 @@ export default function MapViewScreen() {
       longitude: currentLocation.longitude 
     },
     title: "Vị trí hiện tại",
-    tintColor: "red",
+    tintColor: "vị trí hiện tại",
     systemImage: "location.fill",
   }] : [];
 
@@ -51,11 +51,10 @@ export default function MapViewScreen() {
     <TouchableOpacity
       style={styles.currentLocationButton}
       onPress={async () => {
-        if (loading) return; // Prevent multiple calls
+        if (loading) return;
         
         await getCurrentLocation();
         
-        // Move camera to current location after getting it
         setTimeout(() => {
           if (currentLocation && ref.current && 'setCameraPosition' in ref.current) {
             ref.current.setCameraPosition({

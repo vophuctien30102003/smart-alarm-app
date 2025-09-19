@@ -3,19 +3,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LOCATION_HISTORY_KEY = 'location_history';
 
-export interface LocationHistoryService {
+export interface LocationHistoryServiceProps {
   saveLocationToHistory: (location: LocationType) => Promise<void>;
   loadLocationHistory: () => Promise<LocationType[]>;
   clearLocationHistory: () => Promise<void>;
   removeLocationFromHistory: (locationId: string) => Promise<void>;
 }
 
-class LocationHistoryServiceImpl implements LocationHistoryService {
+class LocationHistoryService implements LocationHistoryServiceProps {
   async saveLocationToHistory(location: LocationType): Promise<void> {
     try {
       const existingHistory = await this.loadLocationHistory();
-      
-      // Remove duplicates based on location ID or coordinates
+     
       const filteredHistory = existingHistory.filter(
         (item) => 
           item.id !== location.id && 
@@ -23,8 +22,7 @@ class LocationHistoryServiceImpl implements LocationHistoryService {
             item.coordinates.longitude === location.coordinates.longitude)
       );
       
-      // Add new location to the beginning of the list
-      const updatedHistory = [location, ...filteredHistory].slice(0, 20); // Keep only last 20 items
+      const updatedHistory = [location, ...filteredHistory].slice(0, 20);
       
       await AsyncStorage.setItem(LOCATION_HISTORY_KEY, JSON.stringify(updatedHistory));
     } catch (error) {
@@ -70,6 +68,5 @@ class LocationHistoryServiceImpl implements LocationHistoryService {
   }
 }
 
-// Export singleton instance
-export const locationHistoryService = new LocationHistoryServiceImpl();
+export const locationHistoryService = new LocationHistoryService();
 export default locationHistoryService;

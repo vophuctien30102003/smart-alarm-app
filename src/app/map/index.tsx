@@ -1,5 +1,3 @@
-import LocationAlarmManager from "@/components/alarm/LocationAlarmManager";
-import LocationAlarmStatus from "@/components/alarm/LocationAlarmStatus";
 import AddLocationModal from "@/components/map/AddLocationModal";
 import FavoriteLocationList from "@/components/map/FavoriteLocationList";
 import LocationHistoryList from "@/components/map/LocationHistoryList";
@@ -20,7 +18,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function MapScreen() {
     const [showAddModal, setShowAddModal] = useState(false);
-    const [showAlarmForm, setShowAlarmForm] = useState(false);
     const [selectedLocationForAlarm, setSelectedLocationForAlarm] =
         useState<LocationType | null>(null);
     const [activeTab, setActiveTab] = useState<"map" | "favorites" | "history">(
@@ -32,35 +29,29 @@ export default function MapScreen() {
 
     const { favoriteLocations } = useLocationStore();
 
-    // Load history count for tab display
     useEffect(() => {
         const loadHistoryCount = async () => {
             try {
-                const history = await locationHistoryService.loadLocationHistory();
+                const history =
+                    await locationHistoryService.loadLocationHistory();
                 setHistoryCount(history.length);
             } catch (error) {
-                console.error('Failed to load history count:', error);
+                console.error("Failed to load history count:", error);
             }
         };
-        
+
         loadHistoryCount();
-        
-        // Reload count when tab becomes active
-        if (activeTab === 'history') {
+
+        if (activeTab === "history") {
             loadHistoryCount();
         }
     }, [activeTab]);
 
     const handleCreateAlarmForLocation = (location: LocationType) => {
         setSelectedLocationForAlarm(location);
-        setShowAlarmForm(true);
     };
 
     const handleLocationSelect = (location: LocationType) => {
-        setSelectedLocation(location);
-    };
-
-    const handleMarkerPress = (location: LocationType) => {
         setSelectedLocation(location);
     };
 
@@ -69,12 +60,9 @@ export default function MapScreen() {
             case "map":
                 return (
                     <View className="flex-1">
-                        <View className="px-4 py-3 bg-white border-b border-gray-200"></View>
-
                         <View className="flex-1 pb-[50px]">
                             <MapViewComponent />
                         </View>
-
                         {selectedLocation && (
                             <View className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-lg border-t border-gray-200">
                                 <View className="w-12 h-1 bg-gray-300 rounded-full mx-auto mt-3 mb-4" />
@@ -154,43 +142,16 @@ export default function MapScreen() {
                 className="flex-1"
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
             >
-                {/* Header */}
                 <View className="bg-white shadow-sm border-b border-gray-200">
                     <View className="px-4 py-3">
                         <Text className="text-2xl font-bold text-gray-900">
                             Location
                         </Text>
                     </View>
-
-                    {/* Quick Actions */}
                     <View className="px-4 pb-3 space-y-2">
-                        {/* Location Alarm Status */}
-                        <LocationAlarmStatus
-                            onPress={() => setShowAlarmForm(true)}
-                        />
-
-                        <TouchableOpacity
-                            onPress={() => setShowAddModal(true)}
-                            className="bg-blue-500 flex-row items-center justify-center py-3 rounded-lg"
-                        >
-                            <Ionicons name="add" size={20} color="white" />
-                            <Text className="text-white font-semibold text-base ml-2">
-                                Add new location
-                            </Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            onPress={() => setShowAlarmForm(true)}
-                            className="bg-green-500 flex-row items-center justify-center py-3 rounded-lg"
-                        >
-                            <Ionicons name="alarm" size={20} color="white" />
-                            <Text className="text-white font-semibold text-base ml-2">
-                                Create location alarm
-                            </Text>
-                        </TouchableOpacity>
+                        
                     </View>
 
-                    {/* Tab Selector */}
                     <View className="flex-row mx-4 mb-3">
                         <TouchableOpacity
                             onPress={() => setActiveTab("map")}
@@ -287,7 +248,6 @@ export default function MapScreen() {
                 {/* Content Area */}
                 <View className="flex-1">{renderTabContent()}</View>
 
-                {/* Modals */}
                 <AddLocationModal
                     visible={showAddModal}
                     onClose={() => {
@@ -296,14 +256,7 @@ export default function MapScreen() {
                     }}
                 />
 
-                <LocationAlarmManager
-                    visible={showAlarmForm}
-                    onClose={() => {
-                        setShowAlarmForm(false);
-                        setSelectedLocationForAlarm(null);
-                    }}
-                    selectedLocation={selectedLocationForAlarm || undefined}
-                />
+                
             </KeyboardAvoidingView>
         </SafeAreaView>
     );

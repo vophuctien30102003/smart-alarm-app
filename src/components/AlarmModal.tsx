@@ -1,37 +1,46 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Alert, Modal, View } from 'react-native';
-import { useActiveAlarm } from '../../hooks/useAlarms';
-import { Button } from '../ui/button';
-import { Text } from '../ui/text';
+import { useActiveAlarm } from '../hooks/useAlarms';
 import { AlarmPlayer } from './AlarmPlayer';
+import { Button } from './ui/button';
+import { Text } from './ui/text';
 
 export const AlarmModal: React.FC = () => {
   const { activeAlarm, isPlaying, stopAlarm, snoozeAlarm } = useActiveAlarm();
 
-  if (!activeAlarm || !isPlaying) {
-    return null;
-  }
-
-  const handleStop = () => {
+  const handleStop = useCallback(() => {
     Alert.alert(
       'Stop Alarm',
       'Are you sure you want to stop the alarm?',
       [
         { text: 'Cancel', style: 'cancel' },
         { 
-          text: 'Dừng', 
+          text: 'Stop', 
           style: 'destructive',
           onPress: stopAlarm 
         },
       ]
     );
-  };
+  }, [stopAlarm]);
 
-  const handleSnooze = () => {
-    if (activeAlarm.snoozeEnabled) {
+  const handleSnooze = useCallback(() => {
+    if (activeAlarm?.snoozeEnabled) {
       snoozeAlarm();
     }
-  };
+  }, [activeAlarm?.snoozeEnabled, snoozeAlarm]);
+
+  const snoozeText = useMemo(() => {
+    if (!activeAlarm?.snoozeEnabled) return '';
+    return `Snooze (${activeAlarm.snoozeDuration || 5} min)`;
+  }, [activeAlarm?.snoozeEnabled, activeAlarm?.snoozeDuration]);
+
+  const shouldShowModal = useMemo(() => {
+    return activeAlarm && isPlaying;
+  }, [activeAlarm, isPlaying]);
+
+  if (!shouldShowModal) {
+    return null;
+  }
 
   return (
     <>
@@ -46,7 +55,7 @@ export const AlarmModal: React.FC = () => {
             <Text className="text-6xl">⏰</Text>
             
             <Text className="text-3xl font-bold text-center text-gray-800">
-              {activeAlarm.label}
+              {activeAlarm.label || 'Alarm'}
             </Text>
             
             <Text className="text-xl text-gray-600 text-center">
@@ -60,7 +69,7 @@ export const AlarmModal: React.FC = () => {
                   onPress={handleSnooze}
                 >
                   <Text className="text-white text-center font-semibold text-lg">
-                    Snooze ({activeAlarm.snoozeDuration} min)
+                    {snoozeText}
                   </Text>
                 </Button>
               )}

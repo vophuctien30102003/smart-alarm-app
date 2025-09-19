@@ -169,6 +169,7 @@ module.exports = {
           info: 'rgb(var(--color-indicator-info)/<alpha-value>)',
           error: 'rgb(var(--color-indicator-error)/<alpha-value>)',
         },
+        'tab-bottom-color': 'rgba(152, 135, 195, 0.15);',
       },
       fontFamily: {
         heading: undefined,

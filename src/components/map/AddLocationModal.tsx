@@ -115,12 +115,7 @@ export default function AddLocationModal({
                         <Text className="text-sm font-medium text-gray-700 mb-2">
                             Search Location
                         </Text>
-                        <SearchLocation
-                            onLocationSelect={(location) =>
-                                setSelectedLocation(location)
-                            }
-                            placeholder="Search for places..."
-                        />
+ 
                     </View>
 
                     {/* Map View */}

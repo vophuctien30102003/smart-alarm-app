@@ -1,7 +1,6 @@
 import { Text } from '@/components/ui/text';
 import { colors } from '@/constants';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import React from 'react';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 
 export default function Settings() {

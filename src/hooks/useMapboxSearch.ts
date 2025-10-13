@@ -5,51 +5,85 @@ import { useCallback, useEffect, useState } from "react";
 const MAPBOX_TOKEN = String(Constants.expoConfig?.extra?.mapboxAccessToken);
 const search = new SearchBoxCore({ accessToken: MAPBOX_TOKEN });
 
+export interface MapboxSearchResult {
+    id: string;
+    name: string;
+    address: string;
+    coordinates: {
+        latitude: number;
+        longitude: number;
+    };
+    mapbox_id: string;
+}
+
 export const useMapboxSearch = (query: string) => {
-    const [results, setResults] = useState<any[]>([]);
+    const [results, setResults] = useState<MapboxSearchResult[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const searchText = useCallback(
-        debounce(async (query: string) => {
-            if (!query.trim()) return; 
+    const debouncedSearch = useCallback(
+        debounce(async (searchQuery: string) => {
+            if (!searchQuery.trim()) {
+                setResults([]);
+                return;
+            }
 
             try {
                 setLoading(true);
                 setError(null);
 
                 const sessionToken = new SessionToken();
-                const result = await search.suggest(query, { sessionToken });
-                setResults(result.suggestions);
+                const result = await search.suggest(searchQuery, { sessionToken });
 
-                const allFeatures = await Promise.all(
-                    result.suggestions.map(async (s) => {
-                        const { features } = await search.retrieve(s, { sessionToken });
-                        return features.map((f) => ({
-                            name: s.name,
-                            coordinates: f.geometry.coordinates,
-                        }));
+                const formattedResults = await Promise.all(
+                    result.suggestions.map(async (suggestion) => {
+                        try {
+                            const { features } = await search.retrieve(suggestion, { sessionToken });
+                            
+                            if (features.length > 0) {
+                                const feature = features[0];
+                                const [longitude, latitude] = feature.geometry.coordinates;
+                                
+                                const externalId = suggestion.external_ids ? 
+                                    Object.values(suggestion.external_ids)[0] : "";
+                                
+                                return {
+                                    id: suggestion.mapbox_id || externalId || `${Date.now()}-${Math.random()}`,
+                                    name: suggestion.name || "Unknown place",
+                                    address: suggestion.full_address || suggestion.place_formatted || "No address available",
+                                    coordinates: {
+                                        latitude,
+                                        longitude,
+                                    },
+                                    mapbox_id: suggestion.mapbox_id || externalId || "",
+                                } as MapboxSearchResult;
+                            }
+                            return null;
+                        } catch (retrieveError) {
+                            console.warn("Failed to retrieve feature for suggestion:", suggestion.name, retrieveError);
+                            return null;
+                        }
                     })
                 );
 
-                const flattened = allFeatures.flat();
+                const validResults = formattedResults.filter((result): result is MapboxSearchResult => result !== null);
+                setResults(validResults);
 
-                console.log("All suggestion features:", flattened);
+                console.log("Formatted search results:", validResults);
 
             } catch (err) {
-                console.error(err);
+                console.error("Search error:", err);
                 setError("Failed to fetch search results");
             } finally {
                 setLoading(false);
-                console.log("Loading finished");
             }
         }, 300),
         []
     );
 
     useEffect(() => {
-        searchText(query);
-    }, [query]);
+        debouncedSearch(query);
+    }, [debouncedSearch, query]);
 
     return { results, loading, error };
 };

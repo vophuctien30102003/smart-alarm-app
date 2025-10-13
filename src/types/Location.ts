@@ -6,6 +6,7 @@ export interface LocationType {
     latitude: number;
     longitude: number;
   };
+  mapbox_id?: string;
   createdAt?: Date;
   isFavorite?: boolean;
   type?: 'home' | 'work' | 'other';

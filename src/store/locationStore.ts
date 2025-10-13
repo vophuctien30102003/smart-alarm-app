@@ -7,14 +7,17 @@ interface LocationStore {
   currentLocation: LocationType | null;
   selectedLocation: LocationType | null;
   favoriteLocations: FavoriteLocationType[];
-  previewLocation: LocationType | null; 
+  previewLocation: LocationType | null;
+  selectedDestination: LocationType | null; // For alarm setup
 
   setCurrentLocation: (location: LocationType) => void;
   setSelectedLocation: (location: LocationType) => void;
+  setSelectedDestination: (location: LocationType) => void;
   addToFavorites: (location: LocationType, label: string, icon?: string) => void;
   removeFromFavorites: (id: string) => void;
   setPreviewLocation: (location: LocationType | null) => void;
   clearPreviewLocation: () => void;
+  clearSelectedDestination: () => void;
   reset: () => void;
 }
 
@@ -25,9 +28,11 @@ export const useLocationStore = create<LocationStore>()(
       selectedLocation: null,
       favoriteLocations: [],
       previewLocation: null,
+      selectedDestination: null,
 
       setCurrentLocation: (location) => set({ currentLocation: location }),
       setSelectedLocation: (location) => set({ selectedLocation: location }),
+      setSelectedDestination: (location) => set({ selectedDestination: location }),
 
       addToFavorites: (location, label, icon = "📍") =>
         set((state) => {
@@ -54,12 +59,15 @@ export const useLocationStore = create<LocationStore>()(
 
       clearPreviewLocation: () => set({ previewLocation: null }),
 
+      clearSelectedDestination: () => set({ selectedDestination: null }),
+
       reset: () =>
         set({
           currentLocation: null,
           selectedLocation: null,
           favoriteLocations: [],
           previewLocation: null,
+          selectedDestination: null,
         }),
     }),
     {

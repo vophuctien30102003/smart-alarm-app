@@ -1,7 +1,12 @@
 import { useMapboxSearch } from "@/hooks/useMapboxSearch";
+import { useLocationStore } from "@/store/locationStore";
+import { useMapAlarmStore } from "@/store/mapAlarmStore";
+import { LocationType } from "@/types/Location";
+import { MapAlarm } from "@/types/MapAlarm";
+import { calculateDistance } from "@/utils/calculateDistanceUtils";
 import { Ionicons } from "@expo/vector-icons";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
-import { useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
     ActivityIndicator,
     SafeAreaView,
@@ -12,9 +17,82 @@ import {
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Text } from "../ui";
 
-const SearchLocationBottomSheetComponent = () => {
+interface SearchLocationBottomSheetProps {
+    currentLocation?: {
+        latitude: number;
+        longitude: number;
+    } | null;
+}
+
+const SearchLocationBottomSheetComponent = React.memo(({ currentLocation }: SearchLocationBottomSheetProps) => {
     const [searchQuery, setSearchQuery] = useState("");
-    const { results, loading, error } = useMapboxSearch(searchQuery);
+    const { results, loading } = useMapboxSearch(searchQuery);
+    const { selectedDestination, setSelectedDestination } = useLocationStore();
+    const { 
+        setCurrentView, 
+        loadRecentAlarms, 
+        getRecentAlarms,
+        setSelectedLocation 
+    } = useMapAlarmStore();
+    
+    useEffect(() => {
+        loadRecentAlarms();
+    }, [loadRecentAlarms]);
+    
+    const recentAlarms = useMemo(() => getRecentAlarms(), [getRecentAlarms]);
+    
+    const handleLocationSelect = useCallback((item: any) => {
+        const location: LocationType = {
+            id: item.id,
+            name: item.name,
+            address: item.address,
+            coordinates: {
+                latitude: item.coordinates.latitude,
+                longitude: item.coordinates.longitude
+            },
+            mapbox_id: item.mapbox_id,
+        };
+        
+        setSelectedLocation(location);
+        setSelectedDestination(location);
+        setCurrentView('setAlarm');
+        setSearchQuery("");
+    }, [setSelectedLocation, setSelectedDestination, setCurrentView]);
+    
+    const handleRecentAlarmSelect = useCallback((alarm: MapAlarm) => {
+        const location: LocationType = {
+            id: alarm.id,
+            name: alarm.name,
+            address: alarm.address,
+            coordinates: {
+                latitude: alarm.lat,
+                longitude: alarm.long
+            },
+            mapbox_id: alarm.mapbox_id,
+        };
+        
+        setSelectedLocation(location);
+        setSelectedDestination(location);
+        setCurrentView('setAlarm');
+    }, [setSelectedLocation, setSelectedDestination, setCurrentView]);
+
+    // Helper function to calculate and format distance
+    const getDistanceText = useCallback((targetLat: number, targetLng: number): string => {
+        if (!currentLocation) return '';
+        
+        const distance = calculateDistance(
+            currentLocation.latitude,
+            currentLocation.longitude,
+            targetLat,
+            targetLng
+        );
+        
+        if (distance < 1) {
+            return `${(distance * 1000).toFixed(0)}m away`;
+        } else {
+            return `${distance.toFixed(1)}km away`;
+        }
+    }, [currentLocation]);
 
     return (
         <View
@@ -78,17 +156,87 @@ const SearchLocationBottomSheetComponent = () => {
                                     <TouchableOpacity
                                         key={item.mapbox_id || index}
                                         className="bg-white/10 p-4 rounded-2xl mb-2"
+                                        onPress={() => handleLocationSelect(item)}
                                     >
-                                        <Text className="text-white text-base font-semibold">
-                                            {item.name || "Unknown place"}
-                                        </Text>
-                                        <Text className="text-gray-300 text-sm mt-1">
-                                            {item.full_address ||
-                                                item.address ||
-                                                "No address available"}
-                                        </Text>
+                                        <View className="flex-row justify-between items-start">
+                                            <View className="flex-1">
+                                                <Text className="text-white text-base font-semibold">
+                                                    {item.name || "Unknown place"}
+                                                </Text>
+                                                <Text className="text-gray-300 text-sm mt-1">
+                                                    {item.address || "No address available"}
+                                                </Text>
+                                            </View>
+                                            {currentLocation && (
+                                                <Text className="text-blue-400 text-xs ml-2">
+                                                    {getDistanceText(item.coordinates.latitude, item.coordinates.longitude)}
+                                                </Text>
+                                            )}
+                                        </View>
                                     </TouchableOpacity>
                                 ))}
+
+                            {/* Recent Alarms Section */}
+                            {!searchQuery && recentAlarms.length > 0 && (
+                                <View className="mt-4">
+                                    <Text className="text-white text-lg font-semibold mb-3 px-1">
+                                        Recent Alarms
+                                    </Text>
+                                    {recentAlarms.slice(0, 5).map((alarm) => (
+                                        <TouchableOpacity
+                                            key={alarm.id}
+                                            className="bg-white/10 p-4 rounded-2xl mb-2"
+                                            onPress={() => handleRecentAlarmSelect(alarm)}
+                                        >
+                                            <View className="flex-row justify-between items-start">
+                                                <View className="flex-1">
+                                                    <Text className="text-white text-base font-semibold">
+                                                        {alarm.lineName || alarm.name}
+                                                    </Text>
+                                                    <Text className="text-gray-300 text-sm mt-1">
+                                                        {alarm.address}
+                                                    </Text>
+                                                    <View className="flex-row items-center mt-1">
+                                                        <Text className="text-blue-400 text-xs">
+                                                            Radius: {alarm.radius}m • {alarm.repeat}
+                                                        </Text>
+                                                        {currentLocation && (
+                                                            <Text className="text-yellow-400 text-xs ml-2">
+                                                                • {getDistanceText(alarm.lat, alarm.long)}
+                                                            </Text>
+                                                        )}
+                                                    </View>
+                                                </View>
+                                                <View className="ml-3 flex items-center">
+                                                    <View className={`w-3 h-3 rounded-full ${alarm.isActive ? 'bg-green-500' : 'bg-gray-500'}`} />
+                                                </View>
+                                            </View>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            )}
+
+                            {selectedDestination && searchQuery === "" && (
+                                <View className="mt-4 p-4 bg-green-500/20 rounded-2xl">
+                                    <Text className="text-white text-lg font-semibold mb-2">
+                                        Selected Destination
+                                    </Text>
+                                    <Text className="text-white text-base font-medium">
+                                        {selectedDestination.name}
+                                    </Text>
+                                    <Text className="text-gray-300 text-sm mt-1 mb-4">
+                                        {selectedDestination.address}
+                                    </Text>
+                                    <TouchableOpacity
+                                        className="bg-blue-500 p-3 rounded-xl"
+                                        onPress={() => setCurrentView('setAlarm')}
+                                    >
+                                        <Text className="text-white text-center font-semibold">
+                                            Set Alarm
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+                            )}
 
                             {!loading &&
                                 searchQuery &&
@@ -103,6 +251,8 @@ const SearchLocationBottomSheetComponent = () => {
             </GestureHandlerRootView>
         </View>
     );
-};
+});
+
+SearchLocationBottomSheetComponent.displayName = 'SearchLocationBottomSheetComponent';
 
 export default SearchLocationBottomSheetComponent;

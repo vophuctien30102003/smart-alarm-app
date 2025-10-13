@@ -7,7 +7,6 @@ import notificationManager from '../lib/NotificationManager';
 import { WeekDay } from '../prototype/enum/day.enum';
 import { Alarm, AlarmStore } from '../types/AlarmClock';
 import { LocationType } from '../types/Location';
-import { formatDistance, formatDuration, getDirections } from '../utils/directionsRouteUtils';
 import { generateTimestampId } from '../utils/idUtils';
 
 const locationService = LocationAlarmService.getInstance();
@@ -239,7 +238,6 @@ export const useAlarmStore = create<AlarmStore>()(
         return alarm.isEnabled && (alarm.isLocationBased || get().getNextAlarmTime(alarm) !== null);
       },
 
-      // Location-based alarm methods
       startLocationTracking: async () => {
         try {
           await locationService.startLocationTracking();
@@ -275,17 +273,6 @@ export const useAlarmStore = create<AlarmStore>()(
             };
           }
 
-          const routeInfo = await getDirections(
-            currentPosition,
-            { latitude: targetLocation.coordinates.latitude, longitude: targetLocation.coordinates.longitude }
-          );
-
-          return routeInfo ? {
-            duration: routeInfo.duration,
-            distance: routeInfo.distance,
-            formattedDuration: formatDuration(routeInfo.duration.value),
-            formattedDistance: formatDistance(routeInfo.distance.value)
-          } : null;
         } catch (error) {
           console.error('Failed to get arrival estimate:', error);
           return null;

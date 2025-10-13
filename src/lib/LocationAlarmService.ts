@@ -1,6 +1,5 @@
 import { Alarm } from '@/types/AlarmClock';
 import { calculateDistance } from '@/utils/calculateDistanceUtils';
-import { getDirections } from '@/utils/directionsRouteUtils';
 import * as Location from 'expo-location';
 import notificationManager from './NotificationManager';
 
@@ -126,21 +125,7 @@ class LocationAlarmService {
         distance,
       };
 
-      if (!isInRange && distance > radiusMeters) {
-        try {
-          const routeInfo = await getDirections(
-            { latitude: location.coords.latitude, longitude: location.coords.longitude },
-            { latitude: alarm.targetLocation.coordinates.latitude, longitude: alarm.targetLocation.coordinates.longitude },
-            'driving'
-          );
-          
-          if (routeInfo) {
-            updatedConfig.estimatedArrivalTime = Math.ceil(routeInfo.duration.value / 60);
-          }
-        } catch (error) {
-          console.warn('Failed to get route information:', error);
-        }
-      }
+      
 
       this.activeLocationAlarms.set(alarmId, updatedConfig);
 

@@ -1,6 +1,6 @@
 import { debounce, SearchBoxCore, SessionToken } from "@mapbox/search-js-core";
 import Constants from "expo-constants";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 
 const MAPBOX_TOKEN = String(Constants.expoConfig?.extra?.mapboxAccessToken);
 const search = new SearchBoxCore({ accessToken: MAPBOX_TOKEN });
@@ -20,6 +20,7 @@ export const useMapboxSearch = (query: string) => {
     const [results, setResults] = useState<MapboxSearchResult[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const sessionTokenRef = useRef<SessionToken>(new SessionToken());
 
     const debouncedSearch = useCallback(
         debounce(async (searchQuery: string) => {
@@ -32,7 +33,7 @@ export const useMapboxSearch = (query: string) => {
                 setLoading(true);
                 setError(null);
 
-                const sessionToken = new SessionToken();
+                const sessionToken = sessionTokenRef.current;
                 const result = await search.suggest(searchQuery, { sessionToken });
 
                 const formattedResults = await Promise.all(
@@ -81,9 +82,26 @@ export const useMapboxSearch = (query: string) => {
         []
     );
 
+    const resetSession = useCallback(() => {
+        sessionTokenRef.current = new SessionToken();
+        setResults([]);
+        setError(null);
+    }, []);
+
+    useEffect(() => {
+        return () => {
+            sessionTokenRef.current = new SessionToken();
+        };
+    }, []);
+
     useEffect(() => {
         debouncedSearch(query);
     }, [debouncedSearch, query]);
 
-    return { results, loading, error };
+    return { 
+        results, 
+        loading, 
+        error, 
+        resetSession
+    };
 };

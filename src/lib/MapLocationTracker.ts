@@ -47,13 +47,11 @@ export class MapLocationTracker {
         return;
       }
 
-      // Start location tracking
       this.isTracking = true;
       this.trackingInterval = setInterval(async () => {
         await this.checkLocation();
-      }, 10000); // Check every 10 seconds
+      }, 10000); 
 
-      console.log(`🔍 Location tracking started for ${this.activeAlarms.size} alarms`);
 
       // Initial check
       await this.checkLocation();
@@ -78,8 +76,6 @@ export class MapLocationTracker {
       this.sound.unloadAsync().catch(console.error);
       this.sound = null;
     }
-
-    console.log('🛑 Location tracking stopped');
   }
 
   updateActiveAlarms(alarms: MapAlarm[]): void {
@@ -91,9 +87,7 @@ export class MapLocationTracker {
       this.activeAlarms.set(alarm.id, alarm);
     });
 
-    console.log(`📍 Updated active alarms: ${this.activeAlarms.size}`);
 
-    // Start or stop tracking based on active alarms
     if (this.activeAlarms.size === 0 && this.isTracking) {
       this.stopTracking();
     } else if (this.activeAlarms.size > 0 && !this.isTracking) {
@@ -116,8 +110,6 @@ export class MapLocationTracker {
         longitude: location.coords.longitude,
       };
 
-      console.log(`📍 Current location: ${currentCoords.latitude.toFixed(6)}, ${currentCoords.longitude.toFixed(6)}`);
-
       for (const [alarmId, alarm] of this.activeAlarms) {
         // Skip if already triggered (prevent spam)
         if (this.triggeredAlarms.has(alarmId)) {
@@ -133,19 +125,14 @@ export class MapLocationTracker {
 
         const distanceInMeters = distance * 1000;
 
-        console.log(`🎯 ${alarm.lineName}: ${distanceInMeters.toFixed(0)}m from target (radius: ${alarm.radius}m)`);
 
         if (distanceInMeters <= alarm.radius) {
           console.log(`🚨 ALARM TRIGGERED! ${alarm.lineName}`);
           await this.triggerAlarm(alarm, distance);
           
-          // Mark as triggered to prevent repeated notifications
           this.triggeredAlarms.add(alarmId);
           
-          // For "Once" alarms, we might want to disable them
           if (alarm.repeat === 'Once') {
-            // The store will handle disabling the alarm
-            // This is just for local tracking prevention
           }
         }
       }
@@ -175,24 +162,17 @@ export class MapLocationTracker {
 
   private async playAlarmSound(alarm: MapAlarm): Promise<void> {
     try {
-      // Stop previous sound if playing
       if (this.sound) {
         await this.sound.unloadAsync();
         this.sound = null;
       }
 
-      // In a real app, you would load different sound files based on alarm.sound
-      // For now, we'll use a system sound or skip the actual audio
-      console.log(`🔊 Playing sound: ${alarm.sound} for ${alarm.lineName}`);
-
-      // Simulate sound duration
       setTimeout(async () => {
         if (this.sound) {
           await this.sound.unloadAsync();
           this.sound = null;
         }
-      }, 10000); // Stop after 10 seconds
-
+      }, 10000); 
     } catch (error) {
       console.error('Error playing alarm sound:', error);
     }

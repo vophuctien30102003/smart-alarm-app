@@ -19,7 +19,6 @@ interface AlarmHistoryComponentProps {
 }
 
 const AlarmHistoryComponent = React.memo(({ isVisible, onClose }: AlarmHistoryComponentProps) => {
-  console.log('🔍 AlarmHistoryComponent render - isVisible:', isVisible);
   
   const { 
     alarms, 

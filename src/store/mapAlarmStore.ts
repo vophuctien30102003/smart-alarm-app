@@ -7,7 +7,6 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 const STORAGE_KEY = 'map_alarms';
 
 interface MapAlarmStore {
-  // UI State
   currentView: ViewMode;
   selectedLocation: LocationType | null;
   editingAlarm: MapAlarm | null;

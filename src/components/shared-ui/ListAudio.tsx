@@ -1,8 +1,8 @@
+import { Sound } from "@/shared/types";
 import { useCallback, useEffect, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
-import { useAudioManager } from "../hooks/useAudioManager";
-import { Sound } from "../types/Sound";
-import { Button, ButtonText } from "./ui";
+import { useAudioManager } from "../../hooks/useAudioManager";
+import { Button, ButtonText } from "../ui";
 
 interface ListAudioProps {
     onSoundSelect?: (sound: Sound) => void;

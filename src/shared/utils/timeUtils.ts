@@ -1,6 +1,5 @@
-import { addDays, format, isAfter, isBefore, setHours, setMilliseconds, setMinutes, setSeconds } from 'date-fns';
-import { WeekDay } from '../prototype/enum/day.enum';
-import { Alarm } from '../types/AlarmClock';
+import { addDays, format } from 'date-fns';
+import { WeekDay } from '../enums';
 
 export const formatTime = (date: Date): string => {
   return format(date, 'HH:mm');
@@ -22,7 +21,7 @@ export const parseTimeString = (timeString: string): { hours: number; minutes: n
   return { hours, minutes };
 };
 
-const mapJSDayToWeekDay = (jsDay: number): WeekDay => {
+export const mapJSDayToWeekDay = (jsDay: number): WeekDay => {
   const mapping: { [key: number]: WeekDay } = {
     0: WeekDay.SUNDAY,
     1: WeekDay.MONDAY,
@@ -35,7 +34,7 @@ const mapJSDayToWeekDay = (jsDay: number): WeekDay => {
   return mapping[jsDay];
 };
 
-const mapWeekDayToNumber = (day: WeekDay): number => {
+export const mapWeekDayToNumber = (day: WeekDay): number => {
   const mapping: { [key in WeekDay]: number } = {
     [WeekDay.SUNDAY]: 0,
     [WeekDay.MONDAY]: 1,
@@ -46,59 +45,6 @@ const mapWeekDayToNumber = (day: WeekDay): number => {
     [WeekDay.SATURDAY]: 6,
   };
   return mapping[day];
-};
-
-export const getNextAlarmTime = (alarm: Alarm): Date | null => {
-  if (!alarm.isEnabled) return null;
-
-  const now = new Date();
-  const { hours, minutes } = parseTimeString(alarm.time);
-  
-  if (alarm.repeatDays.length === 0) {
-    const today = setMilliseconds(setSeconds(setMinutes(setHours(now, hours), minutes), 0), 0);
-    
-    if (isAfter(today, now)) {
-      return today;
-    } else {
-      return addDays(today, 1);
-    }
-  }
-
-  for (let i = 0; i < 7; i++) {
-    const checkDate = addDays(now, i);
-    const dayOfWeek = mapJSDayToWeekDay(checkDate.getDay());
-    
-    if (alarm.repeatDays.includes(dayOfWeek)) {
-      const alarmTime = setMilliseconds(
-        setSeconds(
-          setMinutes(
-            setHours(checkDate, hours),
-            minutes
-          ),
-          0
-        ),
-        0
-      );
-      
-      if (i === 0 && isBefore(alarmTime, now)) {
-        continue;
-      }
-      
-      return alarmTime;
-    }
-  }
-
-  return null;
-};
-
-export const isAlarmDue = (alarm: Alarm, tolerance: number = 60000): boolean => {
-  const nextTime = getNextAlarmTime(alarm);
-  if (!nextTime) return false;
-
-  const now = new Date();
-  const timeDiff = Math.abs(nextTime.getTime() - now.getTime());
-  
-  return timeDiff <= tolerance;
 };
 
 export const getWeekDayFullName = (day: WeekDay): string => {

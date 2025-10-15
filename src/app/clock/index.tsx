@@ -1,3 +1,4 @@
+import { WeekDay } from "@/shared";
 import { useState } from "react";
 import {
     Pressable,
@@ -5,23 +6,30 @@ import {
     Switch,
     View,
 } from "react-native";
-import AlarmClockFormModal from "../../components/clock/FormAlarmClock";
+import { FormAlarmClock } from "../../components/clock";
 import { Text } from "../../components/ui/text";
 import { useAlarms } from "../../hooks/useAlarms";
-import { WeekDay } from "../../prototype/enum";
-import { Alarm } from "../../types/AlarmClock";
+import { Alarm, isTimeAlarm } from "../../shared/types";
+import { useAlarmStore } from "../../store/alarmStore";
 
 export default function AlarmClockPage() {
     const { alarms, toggleAlarm } = useAlarms();
+    const { triggerAlarm } = useAlarmStore();
 
     const [showAlarmModal, setShowAlarmModal] = useState(false);
     const [editingAlarm, setEditingAlarm] = useState<Alarm | null>(null);
 
-    const formatTime = (time: string) => {
-        return time || "00:00";
+    const formatTime = (alarm: Alarm) => {
+        if (isTimeAlarm(alarm)) {
+            return alarm.time || "00:00";
+        }
+        return "Location Alarm";
     };
 
-    const getWeekDaysText = (days: WeekDay[]) => {
+    const getWeekDaysText = (alarm: Alarm) => {
+        if (!isTimeAlarm(alarm)) return "Location Based";
+        
+        const days = alarm.repeatDays;
         if (days.length === 0) return "Never";
         if (days.length === 7) return "Every Day";
 
@@ -36,6 +44,14 @@ export default function AlarmClockPage() {
         };
 
         return days.map((day) => dayNames[day]).join(", ");
+    };
+
+    const handleTestAlarm = () => {
+        if (alarms.length > 0) {
+            const firstAlarm = alarms[0];
+            console.log('🧪 Testing alarm trigger for:', firstAlarm.label);
+            triggerAlarm(firstAlarm);
+        }
     };
 
     const handleEditAlarm = (alarm: Alarm) => {
@@ -61,6 +77,11 @@ export default function AlarmClockPage() {
                         +
                     </Text>
                 </Pressable>
+                {alarms.length > 0 && (
+                    <Pressable onPress={handleTestAlarm} className="bg-blue-500 px-3 py-1 rounded">
+                        <Text className="text-white text-sm">Test Alarm</Text>
+                    </Pressable>
+                )}
             </View>
 
             <View className="px-6 mb-8">
@@ -87,15 +108,13 @@ export default function AlarmClockPage() {
                                     <View className="flex-row justify-between items-center">
                                         <View className="flex-1">
                                             <Text className="text-white text-3xl font-light mb-1">
-                                                {formatTime(alarm.time)}
+                                                {formatTime(alarm)}
                                             </Text>
                                             <Text className="text-gray-400 text-base">
                                                 {alarm.label}
                                             </Text>
                                             <Text className="text-gray-400 text-sm">
-                                                {getWeekDaysText(
-                                                    alarm.repeatDays
-                                                )}
+                                                {getWeekDaysText(alarm)}
                                             </Text>
                                         </View>
 
@@ -132,7 +151,7 @@ export default function AlarmClockPage() {
                 )}
             </ScrollView>
 
-            <AlarmClockFormModal
+            <FormAlarmClock
                 visible={showAlarmModal}
                 onClose={handleCloseModal}
                 editingAlarm={editingAlarm}

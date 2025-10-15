@@ -1,17 +1,17 @@
+import { calculateDistance } from '@/shared/utils';
 import { useLocationStore } from '@/store/locationStore';
 import { useMapAlarmStore } from '@/store/mapAlarmStore';
-import { calculateDistance } from '@/utils/calculateDistanceUtils';
 import { Ionicons } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import Slider from '@react-native-community/slider';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    SafeAreaView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  SafeAreaView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -167,10 +167,8 @@ const SetAlarmComponent = React.memo(({ isVisible, onClose, currentLocation }: S
                   {currentLocation && (
                     <Text className="text-blue-400 text-sm mt-2">
                       Distance: {calculateDistance(
-                        currentLocation.latitude,
-                        currentLocation.longitude,
-                        location.coordinates.latitude,
-                        location.coordinates.longitude
+                        { latitude: currentLocation.latitude, longitude: currentLocation.longitude },
+                        { latitude: location.coordinates.latitude, longitude: location.coordinates.longitude }
                       ).toFixed(2)} km
                     </Text>
                   )}

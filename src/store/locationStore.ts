@@ -1,21 +1,21 @@
-import { FavoriteLocationType, LocationType } from "@/types/Location";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import { FavoriteLocation, LegacyLocationType } from "../shared/types";
 
 interface LocationStore {
-  currentLocation: LocationType | null;
-  selectedLocation: LocationType | null;
-  favoriteLocations: FavoriteLocationType[];
-  previewLocation: LocationType | null;
-  selectedDestination: LocationType | null; // For alarm setup
+  currentLocation: LegacyLocationType | null;
+  selectedLocation: LegacyLocationType | null;
+  favoriteLocations: FavoriteLocation[];
+  previewLocation: LegacyLocationType | null;
+  selectedDestination: LegacyLocationType | null;
 
-  setCurrentLocation: (location: LocationType) => void;
-  setSelectedLocation: (location: LocationType) => void;
-  setSelectedDestination: (location: LocationType) => void;
-  addToFavorites: (location: LocationType, label: string, icon?: string) => void;
+  setCurrentLocation: (location: LegacyLocationType) => void;
+  setSelectedLocation: (location: LegacyLocationType) => void;
+  setSelectedDestination: (location: LegacyLocationType) => void;
+  addToFavorites: (location: LegacyLocationType, label: string, icon?: string) => void;
   removeFromFavorites: (id: string) => void;
-  setPreviewLocation: (location: LocationType | null) => void;
+  setPreviewLocation: (location: LegacyLocationType | null) => void;
   clearPreviewLocation: () => void;
   clearSelectedDestination: () => void;
   reset: () => void;
@@ -75,7 +75,6 @@ export const useLocationStore = create<LocationStore>()(
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         favoriteLocations: state.favoriteLocations,
-        // previewLocation is temporary, don't persist it
       }),
     }
   )

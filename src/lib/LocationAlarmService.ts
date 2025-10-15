@@ -1,7 +1,10 @@
-import { Alarm } from '@/types/AlarmClock';
-import { calculateDistance } from '@/utils/calculateDistanceUtils';
+import { LocationAlarm as Alarm } from '@/shared/types';
+import { calculateDistance } from '@/shared/utils';
 import * as Location from 'expo-location';
 import notificationManager from './NotificationManager';
+// TODO: Migrate to shared utilities
+// import { LocationPermissionManager } from '@/shared/utils/locationPermissions';
+// import { ALARM_CONSTANTS } from '@/shared/constants';
 
 export interface LocationAlarmConfig {
   alarm: Alarm;
@@ -33,6 +36,7 @@ class LocationAlarmService {
     if (this.isTracking) return;
 
     try {
+      // TODO: Replace with LocationPermissionManager.requestLocationPermissions()
       const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
       if (foregroundStatus !== 'granted') {
         throw new Error('Foreground location permission not granted');
@@ -40,22 +44,23 @@ class LocationAlarmService {
 
       const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
       if (backgroundStatus !== 'granted') {
-        console.warn('Background location permission not granted. Location alarms may not work when app is in background.');
+        console.warn('⚠️ LocationAlarmService: Background permission not granted. Limited functionality.');
       }
 
+      // TODO: Replace with LocationPermissionManager.getLocationWatchOptions()
       this.locationSubscription = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.High,
-          timeInterval: 10000,
-          distanceInterval: 50,
+          timeInterval: 10000, // TODO: Use ALARM_CONSTANTS.LOCATION_UPDATE_INTERVAL
+          distanceInterval: 50, // TODO: Use ALARM_CONSTANTS.LOCATION_DISTANCE_INTERVAL
         },
         this.handleLocationUpdate.bind(this)
       );
 
       this.isTracking = true;
-      console.log('Location tracking started for location alarms');
+      console.log('✅ LocationAlarmService: Location tracking started');
     } catch (error) {
-      console.error('Failed to start location tracking:', error);
+      console.error('❌ LocationAlarmService: Failed to start tracking:', error);
       throw error;
     }
   }
@@ -71,8 +76,8 @@ class LocationAlarmService {
   }
 
   addLocationAlarm(alarm: Alarm): void {
-    if (!alarm.isLocationBased || !alarm.targetLocation) {
-      console.warn('Attempted to add non-location alarm to location tracking');
+    if (!alarm.targetLocation) {
+      console.warn('Attempted to add location alarm without target location');
       return;
     }
 
@@ -95,7 +100,7 @@ class LocationAlarmService {
     this.activeLocationAlarms.clear();
 
     alarms
-      .filter(alarm => alarm.isEnabled && alarm.isLocationBased && alarm.targetLocation)
+      .filter(alarm => alarm.isEnabled && alarm.targetLocation)
       .forEach(alarm => this.addLocationAlarm(alarm));
 
     console.log(`Updated location alarms. Active count: ${this.activeLocationAlarms.size}`);
@@ -108,10 +113,11 @@ class LocationAlarmService {
       if (!alarm.targetLocation) continue;
 
       const distance = calculateDistance(
-        location.coords.latitude,
-        location.coords.longitude,
-        alarm.targetLocation.coordinates.latitude,
-        alarm.targetLocation.coordinates.longitude
+        {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude
+        },
+        alarm.targetLocation.coordinates
       ) * 1000;
 
       const radiusMeters = alarm.radiusMeters || 100;
@@ -152,15 +158,14 @@ class LocationAlarmService {
     
     const body = `Alarm: ${alarm.label}`;
     
-    await notificationManager.showLocationAlarmNotification(alarm, title, body);
+    await notificationManager.showLocationAlarmNotification(alarm as any, title, body);
 
     if (this.onAlarmTrigger) {
       this.onAlarmTrigger(alarm);
     }
 
-    if (alarm.deleteAfterNotification) {
-      this.removeLocationAlarm(alarm.id);
-    }
+    // LocationAlarms don't have deleteAfterNotification property
+    // They are managed differently than time-based alarms
   }
 
   getActiveLocationAlarms(): LocationAlarmConfig[] {

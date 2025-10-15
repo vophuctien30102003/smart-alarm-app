@@ -1,17 +1,17 @@
 import { useMapAlarmStore } from "@/store/mapAlarmStore";
-import { MapAlarm } from "@/types/MapAlarm";
 import { Ionicons } from "@expo/vector-icons";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import React, { useEffect } from "react";
 import {
-    Alert,
-    SafeAreaView,
-    Switch,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  SafeAreaView,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { MapAlarm } from "../../shared/types";
 
 interface AlarmHistoryComponentProps {
   isVisible: boolean;

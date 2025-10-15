@@ -1,9 +1,10 @@
 import React, { useCallback, useMemo } from 'react';
 import { Alert, Modal, View } from 'react-native';
-import { useActiveAlarm } from '../hooks/useAlarms';
+import { useActiveAlarm } from '../../hooks/useAlarms';
+import { isTimeAlarm } from '../../shared/types';
+import { Button } from '../ui/button';
+import { Text } from '../ui/text';
 import { AlarmPlayer } from './AlarmPlayer';
-import { Button } from './ui/button';
-import { Text } from './ui/text';
 
 export const AlarmModal: React.FC = () => {
   const { activeAlarm, isPlaying, stopAlarm, snoozeAlarm } = useActiveAlarm();
@@ -34,6 +35,16 @@ export const AlarmModal: React.FC = () => {
     return `Snooze (${activeAlarm.snoozeDuration || 5} min)`;
   }, [activeAlarm?.snoozeEnabled, activeAlarm?.snoozeDuration]);
 
+  const alarmTimeText = useMemo(() => {
+    if (!activeAlarm) return '';
+    
+    if (isTimeAlarm(activeAlarm)) {
+      return activeAlarm.time;
+    } else {
+      return `📍 ${activeAlarm.targetLocation?.name || 'Location Alarm'}`;
+    }
+  }, [activeAlarm]);
+
   const shouldShowModal = useMemo(() => {
     return activeAlarm && isPlaying;
   }, [activeAlarm, isPlaying]);
@@ -59,7 +70,7 @@ export const AlarmModal: React.FC = () => {
             </Text>
             
             <Text className="text-xl text-gray-600 text-center">
-              {activeAlarm.time}
+              {alarmTimeText}
             </Text>
             
             <View className="space-y-4 w-full max-w-sm">

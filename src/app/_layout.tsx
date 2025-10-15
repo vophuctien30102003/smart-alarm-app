@@ -5,6 +5,7 @@ import { Stack } from "expo-router";
 import { memo } from "react";
 import { View } from "react-native";
 import "react-native-get-random-values";
+import { AlarmModal } from "../components/alarm";
 import "./globals.css";
 
 const MemoizedTabNavigation = memo(TabNavigation);
@@ -37,6 +38,7 @@ export default function RootLayoutNav() {
                             />
                         </Stack>
                         <MemoizedTabNavigation />
+                        <AlarmModal />
                     </View>
             </GluestackUIProvider>
         </NotificationProvider>

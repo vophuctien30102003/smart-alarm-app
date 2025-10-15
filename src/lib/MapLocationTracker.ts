@@ -1,8 +1,11 @@
-import { MapAlarm } from '@/types/MapAlarm';
-import { calculateDistance } from '@/utils/calculateDistanceUtils';
+import { calculateDistance } from '@/shared/utils';
 import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
 import * as Location from 'expo-location';
+import { MapAlarm } from '../shared/types';
+// TODO: Migrate to shared utilities after MapViewComponent is stable
+// import { LocationPermissionManager } from '@/shared/utils/locationPermissions';
+// import { ALARM_CONSTANTS } from '@/shared/constants';
 
 export class MapLocationTracker {
   private static instance: MapLocationTracker;
@@ -23,12 +26,12 @@ export class MapLocationTracker {
 
   async startTracking(alarms: MapAlarm[]): Promise<void> {
     if (this.isTracking) {
-      console.log('Location tracking already active');
+      console.log('🔄 MapLocationTracker: Already tracking');
       return;
     }
 
     try {
-      // Request permissions
+      // TODO: Replace with LocationPermissionManager.requestLocationPermissions()
       const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
       if (foregroundStatus !== 'granted') {
         throw new Error('Foreground location permission not granted');
@@ -36,7 +39,7 @@ export class MapLocationTracker {
 
       const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
       if (backgroundStatus !== 'granted') {
-        console.warn('Background location permission not granted - limited functionality');
+        console.warn('⚠️ MapLocationTracker: Background permission not granted - limited functionality');
       }
 
       // Update active alarms
@@ -117,10 +120,8 @@ export class MapLocationTracker {
         }
 
         const distance = calculateDistance(
-          currentCoords.latitude,
-          currentCoords.longitude,
-          alarm.lat,
-          alarm.long
+          { latitude: currentCoords.latitude, longitude: currentCoords.longitude },
+          { latitude: alarm.lat, longitude: alarm.long }
         );
 
         const distanceInMeters = distance * 1000;

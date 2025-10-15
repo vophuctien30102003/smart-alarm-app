@@ -1,6 +1,5 @@
-import { colors } from "@/constants";
+import { colors } from "@/shared";
 import { Stack } from "expo-router";
-import { View } from "react-native";
 
 export default function AlarmClockLayout() {
     return (

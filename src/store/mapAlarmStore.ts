@@ -1,14 +1,16 @@
-import { LocationType } from '@/types/Location';
-import { MapAlarm, ViewMode } from '@/types/MapAlarm';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { LegacyLocationType, MapAlarm, ViewMode } from '../shared/types';
+// TODO: Gradually migrate to unified alarm types
+// import { LocationAlarm, ViewMode } from '@/shared/types';
+// import { generateAlarmId } from '@/shared/utils';
 
 const STORAGE_KEY = 'map_alarms';
 
 interface MapAlarmStore {
   currentView: ViewMode;
-  selectedLocation: LocationType | null;
+  selectedLocation: LegacyLocationType | null;
   editingAlarm: MapAlarm | null;
   
   // Alarms Data
@@ -17,7 +19,7 @@ interface MapAlarmStore {
   
   // Actions
   setCurrentView: (view: ViewMode) => void;
-  setSelectedLocation: (location: LocationType | null) => void;
+  setSelectedLocation: (location: LegacyLocationType | null) => void;
   setEditingAlarm: (alarm: MapAlarm | null) => void;
   
   // Alarm Management

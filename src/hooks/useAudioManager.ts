@@ -1,7 +1,7 @@
+import { Sound } from "@/shared/types";
+import { getAllSounds } from "@/shared/utils";
 import { useAudioPlayer } from "expo-audio";
 import { useCallback, useMemo, useState } from "react";
-import { Sound } from "../types/Sound";
-import { getAllSounds } from "../utils/soundUtils";
 
 export const useAudioManager = () => {
     const [currentPlayer, setCurrentPlayer] = useState<any>(null);

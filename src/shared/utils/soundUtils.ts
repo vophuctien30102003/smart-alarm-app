@@ -1,9 +1,9 @@
-import { Sound } from '../types/Sound';
+import { Sound } from '@/shared/types';
 
 const soundAssets = {
-    'funny.mp3': require('../assets/sound/funny.mp3'),
-    'ghost-music.mp3': require('../assets/sound/ghost-music.mp3'),
-    'ringtone.mp3': require('../assets/sound/ringtone.mp3'),
+    'funny.mp3': require('../../assets/sound/funny.mp3'),
+    'ghost-music.mp3': require('../../assets/sound/ghost-music.mp3'),
+    'ringtone.mp3': require('../../assets/sound/ringtone.mp3'),
 };
 
 const createDisplayName = (filename: string): string => {

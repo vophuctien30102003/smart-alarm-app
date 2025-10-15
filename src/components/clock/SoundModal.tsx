@@ -1,7 +1,7 @@
+import { Sound } from "@/shared/types";
 import React from "react";
 import { FlatList, Modal, Pressable, View } from "react-native";
-import { Sound } from "../../types/Sound";
-import ListAudio from "../ListAudio";
+import { ListAudio } from "../shared-ui";
 import { Text } from "../ui/text";
 
 interface SoundModalProps {

@@ -1,6 +1,6 @@
+import { WeekDay } from "@/shared";
 import React from "react";
 import { Modal, Pressable, ScrollView, View } from "react-native";
-import { WeekDay } from "../../prototype/enum";
 import { Text } from "../ui/text";
 
 interface RepeatModalProps {

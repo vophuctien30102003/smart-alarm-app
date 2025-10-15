@@ -1,5 +1,5 @@
 import { Text } from "@/components/ui/text";
-import { colors } from "@/constants";
+import { colors } from "@/shared";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { ScrollView, TouchableOpacity, View } from "react-native";
 

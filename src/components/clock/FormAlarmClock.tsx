@@ -1,3 +1,4 @@
+import { AlarmType, WeekDay } from "@/shared";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     Alert,
@@ -8,9 +9,8 @@ import {
     View,
 } from "react-native";
 import { useAlarms } from "../../hooks/useAlarms";
-import { WeekDay } from "../../prototype/enum";
-import { Alarm } from "../../types/AlarmClock";
-import { Sound } from "../../types/Sound";
+import { getDefaultAlarmSound } from "../../shared/constants";
+import { Alarm, AlarmSound, isTimeAlarm, Sound, TimeAlarm } from "../../shared/types";
 import { Text } from "../ui/text";
 import LabelModal from "./LabelModal";
 import RepeatModal from "./RepeatModal";
@@ -23,7 +23,7 @@ type AlarmFormModalProps = {
     editingAlarm?: Alarm | null;
 };
 
-export default function AlarmClockFormModal({
+export default function FormAlarmClock({
     visible,
     onClose,
     editingAlarm,
@@ -57,14 +57,26 @@ export default function AlarmClockFormModal({
     }, []);
 
     const initializeForm = useCallback(() => {
-        if (editingAlarm) {
+        if (editingAlarm && isTimeAlarm(editingAlarm)) {
             const [hours, minutes] = editingAlarm.time?.split(':').map(Number) || [7, 0];
             setHour(hours);
             setMinute(minutes);
             setRepeatDays(editingAlarm.repeatDays || []);
             setLabel(editingAlarm.label || "Alarm");
             setTempLabel(editingAlarm.label || "Alarm");
-            setSelectedSound(editingAlarm.sound || null);
+            // Convert AlarmSound to Sound format
+            if (editingAlarm.sound) {
+                const soundForState: Sound = {
+                    id: editingAlarm.sound.id,
+                    title: editingAlarm.sound.name,
+                    name: editingAlarm.sound.name,
+                    uri: editingAlarm.sound.uri,
+                    isDefault: editingAlarm.sound.isDefault
+                };
+                setSelectedSound(soundForState);
+            } else {
+                setSelectedSound(null);
+            }
             setIsSnoozeEnabled(editingAlarm.snoozeEnabled ?? true);
             setDeleteAfterNotification(editingAlarm.deleteAfterNotification ?? false);
         } else {
@@ -92,15 +104,25 @@ export default function AlarmClockFormModal({
             .toString()
             .padStart(2, "0")}`;
 
-        const alarmData: Omit<Alarm, "id"> = {
+        // Convert Sound to AlarmSound if selected, otherwise use default
+        const alarmSound: AlarmSound = selectedSound ? {
+            id: selectedSound.id,
+            name: selectedSound.name || selectedSound.title,
+            uri: selectedSound.uri,
+            isDefault: selectedSound.isDefault
+        } : getDefaultAlarmSound();
+
+        const alarmData: Omit<TimeAlarm, "id"> = {
+            type: AlarmType.TIME,
             time,
             isEnabled: true,
             repeatDays,
             label,
-            sound: selectedSound || undefined,
+            sound: alarmSound,
             volume: 0.8,
             snoozeEnabled: isSnoozeEnabled,
             snoozeDuration: 9,
+            maxSnoozeCount: 3,
             deleteAfterNotification,
             createdAt: editingAlarm?.createdAt || new Date(),
             updatedAt: new Date(),

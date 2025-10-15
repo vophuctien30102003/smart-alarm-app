@@ -1,16 +1,19 @@
+import { WeekDay } from '@/shared';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import LocationAlarmService from '../lib/LocationAlarmService';
 import notificationManager from '../lib/NotificationManager';
-import { WeekDay } from '../prototype/enum/day.enum';
-import { Alarm, AlarmStore } from '../types/AlarmClock';
-import { LocationType } from '../types/Location';
-import { generateTimestampId } from '../utils/idUtils';
+import { Alarm, AlarmStore, isLocationAlarm, LocationAlarm, LocationTarget, TimeAlarm } from '../shared/types';
+import { generateTimestampId } from '../shared/utils/idUtils';
+// TODO: Gradually migrate to shared types
+// import { ALARM_CONSTANTS } from '@/shared/constants';
+// import { generateAlarmId } from '@/shared/utils';
 
 const locationService = LocationAlarmService.getInstance();
 
+// Legacy constants - will be moved to shared/constants
 const MAX_SNOOZE_COUNT = 3;
 const DEFAULT_SNOOZE_DURATION = 5;
 const DEFAULT_VOLUME = 0.8;
@@ -33,14 +36,14 @@ export const useAlarmStore = create<AlarmStore>()(
             updatedAt: new Date(),
             volume: alarm.volume || DEFAULT_VOLUME,
             snoozeDuration: alarm.snoozeDuration || DEFAULT_SNOOZE_DURATION,
-          };
+          } as Alarm;
 
           set((state) => ({
             alarms: [...state.alarms, newAlarm],
           }));
 
           if (newAlarm.isEnabled) {
-            await get().setupAlarmNotifications(newAlarm);
+            await get().setupAlarmTracking(newAlarm);
           }
         } catch (error) {
           console.error('Failed to add alarm:', error);
@@ -48,8 +51,8 @@ export const useAlarmStore = create<AlarmStore>()(
         }
       },
 
-      setupAlarmNotifications: async (alarm: Alarm) => {
-        if (alarm.isLocationBased && alarm.targetLocation) {
+      setupAlarmTracking: async (alarm: Alarm) => {
+        if (isLocationAlarm(alarm)) {
           locationService.addLocationAlarm(alarm);
           
           try {
@@ -77,14 +80,16 @@ export const useAlarmStore = create<AlarmStore>()(
 
       updateAlarm: async (id: string, updates: Partial<Alarm>) => {
         try {
-        const alarm = get().alarms.find(a => a.id === id);
-        if (!alarm) return;
+          const alarm = get().alarms.find(a => a.id === id);
+          if (!alarm) return;
 
-        await get().cleanupAlarmNotifications(alarm);          const updatedAlarm = {
+          await get().cleanupAlarmTracking(alarm);
+          
+          const updatedAlarm: Alarm = {
             ...alarm,
             ...updates,
             updatedAt: new Date(),
-          };
+          } as Alarm;
 
           set((state) => ({
             alarms: state.alarms.map((a) =>
@@ -94,7 +99,7 @@ export const useAlarmStore = create<AlarmStore>()(
 
           // Re-setup notifications/tracking if enabled
           if (updatedAlarm.isEnabled) {
-            await get().setupAlarmNotifications(updatedAlarm);
+            await get().setupAlarmTracking(updatedAlarm);
           }
         } catch (error) {
           console.error('Failed to update alarm:', error);
@@ -102,11 +107,11 @@ export const useAlarmStore = create<AlarmStore>()(
         }
       },
 
-      cleanupAlarmNotifications: async (alarm: Alarm) => {
+      cleanupAlarmTracking: async (alarm: Alarm) => {
         if (alarm.notificationId) {
           await notificationManager.cancelAlarmNotification(alarm.notificationId);
         }
-        if (alarm.isLocationBased) {
+        if (isLocationAlarm(alarm)) {
           locationService.removeLocationAlarm(alarm.id);
         }
       },
@@ -115,7 +120,7 @@ export const useAlarmStore = create<AlarmStore>()(
         try {
           const alarm = get().alarms.find(a => a.id === id);
           if (alarm) {
-            await get().cleanupAlarmNotifications(alarm);
+            await get().cleanupAlarmTracking(alarm);
           }
 
           set((state) => ({
@@ -189,7 +194,7 @@ export const useAlarmStore = create<AlarmStore>()(
       },
 
       scheduleNotifications: async (alarm: Alarm) => {
-        if (alarm.isLocationBased) {
+        if (isLocationAlarm(alarm)) {
           // Location-based alarms don't use time-based notifications
           return;
         }
@@ -204,11 +209,12 @@ export const useAlarmStore = create<AlarmStore>()(
       },
 
       getNextAlarmTime: (alarm: Alarm): Date | null => {
-        if (alarm.isLocationBased || !alarm.isEnabled) {
+        if (isLocationAlarm(alarm) || !alarm.isEnabled) {
           return null;
         }
 
-        const [hours, minutes] = alarm.time.split(':').map(Number);
+        const timeAlarm = alarm as TimeAlarm;
+        const [hours, minutes] = timeAlarm.time.split(':').map(Number);
         const now = new Date();
         const alarmDate = new Date(now);
         alarmDate.setHours(hours, minutes, 0, 0);
@@ -217,9 +223,9 @@ export const useAlarmStore = create<AlarmStore>()(
           alarmDate.setDate(alarmDate.getDate() + 1);
         }
 
-        if (alarm.repeatDays.length > 0) {
+        if (timeAlarm.repeatDays.length > 0) {
           const currentDay = alarmDate.getDay();
-          const daysUntilNext = alarm.repeatDays
+          const daysUntilNext = timeAlarm.repeatDays
             .map(day => {
               const dayNum = day === WeekDay.SUNDAY ? 0 : day;
               let diff = dayNum - currentDay;
@@ -235,13 +241,13 @@ export const useAlarmStore = create<AlarmStore>()(
       },
 
       isAlarmActive: (alarm: Alarm): boolean => {
-        return alarm.isEnabled && (alarm.isLocationBased || get().getNextAlarmTime(alarm) !== null);
+        return alarm.isEnabled && (isLocationAlarm(alarm) || get().getNextAlarmTime(alarm) !== null);
       },
 
       startLocationTracking: async () => {
         try {
           await locationService.startLocationTracking();
-          const alarms = get().alarms.filter(a => a.isEnabled && a.isLocationBased);
+          const alarms = get().alarms.filter(a => a.isEnabled && isLocationAlarm(a)) as LocationAlarm[];
           locationService.updateLocationAlarms(alarms);
           
           locationService.setAlarmTriggerCallback((alarm) => {
@@ -258,11 +264,11 @@ export const useAlarmStore = create<AlarmStore>()(
       },
 
       updateLocationAlarms: () => {
-        const alarms = get().alarms.filter(a => a.isEnabled && a.isLocationBased);
+        const alarms = get().alarms.filter(a => a.isEnabled && isLocationAlarm(a)) as LocationAlarm[];
         locationService.updateLocationAlarms(alarms);
       },
 
-      getArrivalTimeEstimate: async (targetLocation: LocationType, currentPosition?: { latitude: number; longitude: number }) => {
+      getArrivalTimeEstimate: async (targetLocation: LocationTarget, currentPosition?: { latitude: number; longitude: number }) => {
         try {
           if (!currentPosition) {
             const currentLocation = await locationService.getCurrentLocation();

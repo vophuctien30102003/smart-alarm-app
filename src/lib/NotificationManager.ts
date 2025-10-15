@@ -2,8 +2,8 @@ import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import { WeekDay } from '../prototype/enum/day.enum';
-import { Alarm } from '../types/AlarmClock';
+import { WeekDay } from '../shared/enums';
+import { Alarm } from '../shared/types';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({

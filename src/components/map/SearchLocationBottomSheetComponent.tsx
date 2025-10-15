@@ -1,9 +1,6 @@
 import { useMapboxSearch } from "@/hooks/useMapboxSearch";
 import { useLocationStore } from "@/store/locationStore";
 import { useMapAlarmStore } from "@/store/mapAlarmStore";
-import { LocationType } from "@/types/Location";
-import { MapAlarm } from "@/types/MapAlarm";
-import { calculateDistance } from "@/utils/calculateDistanceUtils";
 import { Ionicons } from "@expo/vector-icons";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
@@ -15,6 +12,8 @@ import {
     View,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { LegacyLocationType, MapAlarm } from "../../shared/types";
+import { calculateDistance } from "../../shared/utils/locationUtils";
 import { Text } from "../ui";
 
 interface SearchLocationBottomSheetProps {
@@ -42,7 +41,7 @@ const SearchLocationBottomSheetComponent = React.memo(({ currentLocation }: Sear
     const recentAlarms = useMemo(() => getRecentAlarms(), [getRecentAlarms]);
     
     const handleLocationSelect = useCallback((item: any) => {
-        const location: LocationType = {
+        const location: LegacyLocationType = {
             id: item.id,
             name: item.name,
             address: item.address,
@@ -60,7 +59,7 @@ const SearchLocationBottomSheetComponent = React.memo(({ currentLocation }: Sear
     }, [setSelectedLocation, setSelectedDestination, setCurrentView]);
     
     const handleRecentAlarmSelect = useCallback((alarm: MapAlarm) => {
-        const location: LocationType = {
+        const location: LegacyLocationType = {
             id: alarm.id,
             name: alarm.name,
             address: alarm.address,
@@ -81,10 +80,8 @@ const SearchLocationBottomSheetComponent = React.memo(({ currentLocation }: Sear
         if (!currentLocation) return '';
         
         const distance = calculateDistance(
-            currentLocation.latitude,
-            currentLocation.longitude,
-            targetLat,
-            targetLng
+            { latitude: currentLocation.latitude, longitude: currentLocation.longitude },
+            { latitude: targetLat, longitude: targetLng }
         );
         
         if (distance < 1) {

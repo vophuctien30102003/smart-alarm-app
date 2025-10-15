@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from 'react';
+import { isLocationAlarm, isTimeAlarm } from '../shared/types';
 import { useAlarmStore } from '../store/alarmStore';
 
 export const useAlarms = () => {
@@ -46,8 +47,16 @@ export const useAlarms = () => {
 
   const sortedAlarms = useMemo(() => {
     return [...alarms].sort((a, b) => {
-      // Sort by time
-      return a.time.localeCompare(b.time);
+      // Sort time alarms by time, location alarms by label
+      if (isTimeAlarm(a) && isTimeAlarm(b)) {
+        return a.time.localeCompare(b.time);
+      } else if (isLocationAlarm(a) && isLocationAlarm(b)) {
+        return a.label.localeCompare(b.label);
+      } else if (isTimeAlarm(a) && isLocationAlarm(b)) {
+        return -1; // Time alarms first
+      } else {
+        return 1; // Location alarms second
+      }
     });
   }, [alarms]);
 
@@ -171,7 +180,7 @@ export const useAlarmStats = () => {
     const totalAlarms = alarms.length;
     const enabledAlarms = alarms.filter(alarm => alarm.isEnabled).length;
     const disabledAlarms = totalAlarms - enabledAlarms;
-    const locationBasedAlarms = alarms.filter(alarm => alarm.isLocationBased).length;
+    const locationBasedAlarms = alarms.filter(alarm => isLocationAlarm(alarm)).length;
     const timeBasedAlarms = totalAlarms - locationBasedAlarms;
 
     return {

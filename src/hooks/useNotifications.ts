@@ -1,6 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import { useCallback, useEffect, useRef } from 'react';
-import notificationManager from '../lib/NotificationManager';
+import notificationManager from '../services/NotificationManager';
 import { useAlarmStore } from '../store/alarmStore';
 
 export const useNotificationHandler = () => {

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import notificationManager from '../lib/NotificationManager';
+import notificationManager from '../services/NotificationManager';
 import { useAlarmStore } from '../store/alarmStore';
 
 interface NotificationContextType {

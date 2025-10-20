@@ -1,4 +1,4 @@
-import { MapLocationTracker } from "@/lib/MapLocationTracker";
+import { MapLocationTracker } from "@/services/MapLocationTracker";
 import { useMapAlarmStore } from "@/store/mapAlarmStore";
 import { Ionicons } from "@expo/vector-icons";
 import Mapbox, {

@@ -3,8 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import LocationAlarmService from '../lib/LocationAlarmService';
-import notificationManager from '../lib/NotificationManager';
+import LocationAlarmService from '../services/LocationAlarmService';
+import notificationManager from '../services/NotificationManager';
 import { Alarm, AlarmStore, isLocationAlarm, LocationAlarm, LocationTarget, TimeAlarm } from '../shared/types';
 import { generateTimestampId } from '../shared/utils/idUtils';
 

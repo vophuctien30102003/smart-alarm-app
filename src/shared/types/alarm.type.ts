@@ -1,5 +1,5 @@
 import { AlarmRepeatType, AlarmType, WeekDay } from '../enums';
-import { AlarmSound } from './sound';
+import { AlarmSound } from './sound.type';
 
 // Location related types
 export interface LocationTarget {
@@ -58,7 +58,6 @@ export interface AlarmNotification {
   isTriggered: boolean;
 }
 
-// State interfaces
 export interface AlarmState {
   alarms: Alarm[];
   activeAlarm: Alarm | null;
@@ -68,28 +67,23 @@ export interface AlarmState {
 }
 
 export interface AlarmActions {
-  // CRUD operations
   addAlarm: (alarm: Omit<Alarm, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateAlarm: (id: string, updates: Partial<Alarm>) => Promise<void>;
   deleteAlarm: (id: string) => Promise<void>;
   toggleAlarm: (id: string) => Promise<void>;
 
-  // Playback control
   triggerAlarm: (alarm: Alarm) => void;
   stopAlarm: () => void;
   snoozeAlarm: () => void;
 
-  // Notification & tracking management
   setupAlarmTracking: (alarm: Alarm) => Promise<void>;
   cleanupAlarmTracking: (alarm: Alarm) => Promise<void>;
   scheduleNotifications: (alarm: Alarm) => Promise<void>;
   cancelNotifications: (alarmId: string) => Promise<void>;
 
-  // Utility functions
   getNextAlarmTime: (alarm: Alarm) => Date | null;
   isAlarmActive: (alarm: Alarm) => boolean;
 
-  // Location tracking (for location alarms)
   startLocationTracking: () => Promise<void>;
   stopLocationTracking: () => Promise<void>;
   updateLocationAlarms: () => void;
@@ -123,6 +117,3 @@ export interface LegacyMapAlarm {
   timestamp: Date;
   mapbox_id?: string;
 }
-
-// View mode for map screens
-export type ViewMode = 'search' | 'setAlarm' | 'history';

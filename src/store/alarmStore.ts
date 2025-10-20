@@ -1,4 +1,4 @@
-import { WeekDay } from '@/shared';
+import { WeekDay } from '@/shared/enums';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
 import { create } from 'zustand';
@@ -93,7 +93,6 @@ export const useAlarmStore = create<AlarmStore>()(
             ),
           }));
 
-          // Re-setup notifications/tracking if enabled
           if (updatedAlarm.isEnabled) {
             await get().setupAlarmTracking(updatedAlarm);
           }

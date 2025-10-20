@@ -5,11 +5,11 @@ export interface AlarmClockType {
   enabled: boolean;
   schedule: {
     bedtime: {
-      time: string; // "22:15"
+      time: string; 
       enabled: boolean;
     };
     wake: {
-      time: string; // "06:15"
+      time: string; 
       enabled: boolean;
     };
   };

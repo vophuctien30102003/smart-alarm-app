@@ -6,7 +6,7 @@ export interface MapAlarm {
   long: number;
   radius: number;
   lineName: string;
-  timeBeforeArrival: number; // in minutes
+  timeBeforeArrival: number;
   sound: string;
   repeat: 'Once' | 'Weekdays' | 'Everyday';
   isActive: boolean;

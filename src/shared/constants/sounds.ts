@@ -1,4 +1,4 @@
-import { AlarmSound, Sound } from '../types/sound';
+import { AlarmSound, Sound } from '../types/sound.type';
 import { getAllSounds, getDefaultSound } from '../utils/soundUtils';
 
 export const DEFAULT_ALARM_SOUNDS: Sound[] = getAllSounds();

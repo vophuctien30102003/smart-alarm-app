@@ -75,7 +75,6 @@ const SearchLocationBottomSheetComponent = React.memo(({ currentLocation }: Sear
         setCurrentView('setAlarm');
     }, [setSelectedLocation, setSelectedDestination, setCurrentView]);
 
-    // Helper function to calculate and format distance
     const getDistanceText = useCallback((targetLat: number, targetLng: number): string => {
         if (!currentLocation) return '';
         
@@ -109,16 +108,16 @@ const SearchLocationBottomSheetComponent = React.memo(({ currentLocation }: Sear
                         backgroundColor: "rgba(20, 30, 48, 0.25)",
                     }}
                     handleStyle={{
-                        backgroundColor: "transparent",
+                        backgroundColor: "#090212",
                     }}
                     handleIndicatorStyle={{
                         backgroundColor: "rgba(255,255,255,0.3)",
                     }}
                     enableContentPanningGesture={true}
                 >
-                    <SafeAreaView className="flex-1 bg-transparent">
+                    <SafeAreaView className="flex-1 bg-[#090212]">
                         <View className="flex-row items-center px-4 pt-4 pb-8">
-                            <View className="flex-1 flex-row items-center bg-[#rgba(20, 30, 48, 0.25)] rounded-full h-16 px-4">
+                            <View className="flex-1 flex-row items-center bg-[rgba(20, 30, 48, 0.25)] rounded-full h-16 px-4">
                                 <Ionicons
                                     name="search"
                                     size={20}

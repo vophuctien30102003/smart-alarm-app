@@ -21,10 +21,6 @@ export default function RootLayoutNav() {
                                 options={{ headerShown: false }}
                             />
                             <Stack.Screen
-                                name="home"
-                                options={{ headerShown: false }}
-                            />
-                            <Stack.Screen
                                 name="clock"
                                 options={{ headerShown: false }}
                             />

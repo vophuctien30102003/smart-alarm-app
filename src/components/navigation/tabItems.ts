@@ -1,6 +1,6 @@
 
 import { Href } from "expo-router";
-import { Home, Map, Notification, ProfileCircle } from 'iconsax-react-native';
+import {  Map, Notification,  Setting} from 'iconsax-react-native';
 import { ComponentType } from 'react';
 
 export interface NavigationItem {
@@ -12,13 +12,6 @@ export interface NavigationItem {
 }
 
 export const navigationItems: NavigationItem[] = [
-    {
-        name: "home",
-        label: "Home",
-        icon: Home,
-        route: "/home" as Href,
-        testID: "tab-home",
-    },
     {
         name: "map",
         label: "Map", 
@@ -35,8 +28,8 @@ export const navigationItems: NavigationItem[] = [
     },
     {
         name: "settings",
-        label: "Profile",
-        icon: ProfileCircle,
+        label: "Settings",
+        icon: Setting,
         route: "/settings" as Href,
         testID: "tab-settings",
     },

@@ -7,13 +7,9 @@ import LocationAlarmService from '../lib/LocationAlarmService';
 import notificationManager from '../lib/NotificationManager';
 import { Alarm, AlarmStore, isLocationAlarm, LocationAlarm, LocationTarget, TimeAlarm } from '../shared/types';
 import { generateTimestampId } from '../shared/utils/idUtils';
-// TODO: Gradually migrate to shared types
-// import { ALARM_CONSTANTS } from '@/shared/constants';
-// import { generateAlarmId } from '@/shared/utils';
 
 const locationService = LocationAlarmService.getInstance();
 
-// Legacy constants - will be moved to shared/constants
 const MAX_SNOOZE_COUNT = 3;
 const DEFAULT_SNOOZE_DURATION = 5;
 const DEFAULT_VOLUME = 0.8;

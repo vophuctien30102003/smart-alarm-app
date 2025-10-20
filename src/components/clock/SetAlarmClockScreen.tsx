@@ -1,10 +1,10 @@
-import { WeekDay } from "@/shared";
+import { WeekDay } from "@/shared/enums";
+import { LinearGradient } from "expo-linear-gradient";
+import { Back } from "iconsax-react-native";
 import { useState } from "react";
 import { ScrollView, TouchableOpacity, View } from "react-native";
 import { Text } from "../ui/text";
-import { LinearGradient } from "expo-linear-gradient";
-import { Back } from "iconsax-react-native";
-import { CustomAlarmClock } from "../clock/CustomAlarmClock";
+import { CustomAlarmClock } from "./CustomAlarmClock";
 
 interface Props {
     onSave: (alarmData: any) => void;

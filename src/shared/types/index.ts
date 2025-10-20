@@ -1,7 +1,7 @@
 // Alarm-related types (excluding AlarmSound to avoid conflict)
 export {
   Alarm, AlarmActions, AlarmNotification,
-  AlarmState, AlarmStore, BaseAlarm, isLocationAlarm, isTimeAlarm, LegacyMapAlarm, LocationAlarm, LocationTarget, TimeAlarm, ViewMode
+  AlarmState, AlarmStore, BaseAlarm, isLocationAlarm, isTimeAlarm, LegacyMapAlarm, LocationAlarm, LocationTarget, TimeAlarm
 } from './alarm';
 
 // Location-related types  
@@ -16,13 +16,11 @@ export * from './sound';
 
 // Map alarm types
 export {
-  MapAlarm,
+  AlarmMapHistory, MapAlarm,
   MapAlarmConfig,
-  ViewMode as MapViewMode
-} from './mapAlarm';
+  ViewMode
+} from './alarmMap.type';
 
-// History types
-export * from './alarmHistory';
 
 // Notification types
 export * from './notification';

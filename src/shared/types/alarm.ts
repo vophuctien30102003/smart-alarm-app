@@ -30,7 +30,6 @@ export interface BaseAlarm {
   notificationId?: string;
 }
 
-// Time-based alarm
 export interface TimeAlarm extends BaseAlarm {
   type: AlarmType.TIME;
   time: string; // HH:mm format

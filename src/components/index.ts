@@ -1,5 +1,5 @@
 // Component exports organized by feature
-export * from './clock';
+// export * from './clock';
 export * from './map';
 export * from './shared-ui';
 export * from './ui';

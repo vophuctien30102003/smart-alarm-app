@@ -1,4 +1,4 @@
-import SetAlarmScreen from "@/components/alarm/SetAlarmClockScreen";
+import SetAlarmScreen from "@/components/clock/SetAlarmClockScreen";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native";

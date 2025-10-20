@@ -1,6 +1,6 @@
-import SetAlarmScreen from "@/components/alarm/SetAlarmClockScreen";
 import HeaderTabs from "@/components/clock/HeaderTabClock";
 import ListAlarmClock from "@/components/clock/ListAlarmClock";
+import SetAlarmScreen from "@/components/clock/SetAlarmClockScreen";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";

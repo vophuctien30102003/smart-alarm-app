@@ -1,4 +1,4 @@
-import { WeekDay } from "@/shared";
+import { WeekDay } from "@/shared/enums";
 import {
     Pressable,
     ScrollView,

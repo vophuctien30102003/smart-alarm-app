@@ -1,4 +1,5 @@
 import * as Location from 'expo-location';
+import type { LocationAlarm } from './alarm.type';
 
 /**
  * Common interface for all location tracking services
@@ -42,6 +43,17 @@ export interface LocationUpdateEvent {
   location: Location.LocationObject;
   timestamp: Date;
   accuracy: number;
+}
+
+/**
+ * Snapshot of a tracked location alarm
+ */
+export interface LocationAlarmStatus {
+  alarm: LocationAlarm;
+  currentLocation: Location.LocationObject | null;
+  isInRange: boolean;
+  distance: number;
+  estimatedArrivalTime?: number;
 }
 
 /**

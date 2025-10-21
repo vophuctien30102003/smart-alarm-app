@@ -1,7 +1,9 @@
+import { WeekDay } from '../enums';
+
 export interface AlarmClockType {
   id: string;
   label?: string;
-  repeatDays: string[]; 
+  repeatDays: WeekDay[];
   enabled: boolean;
   schedule: {
     bedtime: {

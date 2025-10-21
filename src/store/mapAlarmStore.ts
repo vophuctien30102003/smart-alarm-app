@@ -1,36 +1,33 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { LegacyLocationType, MapAlarm, ViewMode } from '../shared/types';
-// TODO: Gradually migrate to unified alarm types
-// import { LocationAlarm, ViewMode } from '@/shared/types';
-// import { generateAlarmId } from '@/shared/utils';
+import { LocationAlarmType, LocationType, ViewMode } from '../shared/types/alarmLocation.type';
 
 const STORAGE_KEY = 'map_alarms';
 
 interface MapAlarmStore {
   currentView: ViewMode;
-  selectedLocation: LegacyLocationType | null;
-  editingAlarm: MapAlarm | null;
+  selectedLocation: LocationType | null;
+  editingAlarm: LocationAlarmType | null;
   
   // Alarms Data
-  alarms: MapAlarm[];
-  recentAlarms: MapAlarm[];
-  
+  alarms: LocationAlarmType[];
+  recentAlarms: LocationAlarmType[];
+
   // Actions
   setCurrentView: (view: ViewMode) => void;
-  setSelectedLocation: (location: LegacyLocationType | null) => void;
-  setEditingAlarm: (alarm: MapAlarm | null) => void;
-  
+  setSelectedLocation: (location: LocationType | null) => void;
+  setEditingAlarm: (alarm: LocationAlarmType | null) => void;
+
   // Alarm Management
-  addAlarm: (alarm: Omit<MapAlarm, 'id' | 'timestamp'>) => Promise<void>;
-  updateAlarm: (id: string, updates: Partial<MapAlarm>) => Promise<void>;
+  addAlarm: (alarm: Omit<LocationAlarmType, 'id' | 'timestamp'>) => Promise<void>;
+  updateAlarm: (id: string, updates: Partial<LocationAlarmType>) => Promise<void>;
   deleteAlarm: (id: string) => Promise<void>;
   toggleAlarmActive: (id: string) => Promise<void>;
   
   // Recent Alarms (last 10)
   loadRecentAlarms: () => Promise<void>;
-  getRecentAlarms: () => MapAlarm[];
+  getRecentAlarms: () => LocationAlarmType[];
   
   // Helper
   reset: () => void;
@@ -53,7 +50,7 @@ export const useMapAlarmStore = create<MapAlarmStore>()(
 
       // Alarm Management
       addAlarm: async (alarmData) => {
-        const newAlarm: MapAlarm = {
+        const newAlarm: LocationAlarmType = {
           ...alarmData,
           id: `alarm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           timestamp: new Date(),
@@ -123,7 +120,7 @@ export const useMapAlarmStore = create<MapAlarmStore>()(
         try {
           const alarmsData = await AsyncStorage.getItem(STORAGE_KEY);
           if (alarmsData) {
-            const allAlarms: MapAlarm[] = JSON.parse(alarmsData);
+            const allAlarms: LocationAlarmType[] = JSON.parse(alarmsData);
             // Get last 10 alarms, sorted by timestamp
             const recent = allAlarms
               .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())

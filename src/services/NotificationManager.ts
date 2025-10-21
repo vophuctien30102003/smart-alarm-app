@@ -3,7 +3,7 @@ import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { WeekDay } from '../shared/enums';
-import { Alarm } from '../shared/types';
+import { Alarm } from '../shared/types/alarm.type';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({

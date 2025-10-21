@@ -1,52 +1,50 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import {  LegacyLocationType } from "../shared/types";
+import { LocationType } from "../shared/types/alarmLocation.type";
 
 interface LocationStore {
-  currentLocation: LegacyLocationType | null;
-  selectedLocation: LegacyLocationType | null;
-  previewLocation: LegacyLocationType | null;
-  selectedDestination: LegacyLocationType | null;
+    currentLocation: LocationType | null;
+    selectedLocation: LocationType | null;
+    previewLocation: LocationType | null;
+    selectedDestination: LocationType | null;
 
-  setCurrentLocation: (location: LegacyLocationType) => void;
-  setSelectedLocation: (location: LegacyLocationType) => void;
-  setSelectedDestination: (location: LegacyLocationType) => void;  setPreviewLocation: (location: LegacyLocationType | null) => void;
-  clearPreviewLocation: () => void;
-  clearSelectedDestination: () => void;
-  reset: () => void;
+    setCurrentLocation: (location: LocationType) => void;
+    setSelectedLocation: (location: LocationType) => void;
+    setSelectedDestination: (location: LocationType) => void;
+    clearSelectedDestination: () => void;
+    reset: () => void;
 }
 
 export const useLocationStore = create<LocationStore>()(
-  persist(
-    (set, get) => ({
-      currentLocation: null,
-      selectedLocation: null,
-      favoriteLocations: [],
-      previewLocation: null,
-      selectedDestination: null,
+    persist(
+        (set, get) => ({
+            currentLocation: null,
+            selectedLocation: null,
+            favoriteLocations: [],
+            previewLocation: null,
+            selectedDestination: null,
 
-      setCurrentLocation: (location) => set({ currentLocation: location }),
-      setSelectedLocation: (location) => set({ selectedLocation: location }),
-      setSelectedDestination: (location) => set({ selectedDestination: location }),
+            setCurrentLocation: (location) =>
+                set({ currentLocation: location }),
+            setSelectedLocation: (location) =>
+                set({ selectedLocation: location }),
+            setSelectedDestination: (location) =>
+                set({ selectedDestination: location }),
 
-      setPreviewLocation: (location) => set({ previewLocation: location }),
+            clearSelectedDestination: () => set({ selectedDestination: null }),
 
-      clearPreviewLocation: () => set({ previewLocation: null }),
-
-      clearSelectedDestination: () => set({ selectedDestination: null }),
-
-      reset: () =>
-        set({
-          currentLocation: null,
-          selectedLocation: null,
-          previewLocation: null,
-          selectedDestination: null,
+            reset: () =>
+                set({
+                    currentLocation: null,
+                    selectedLocation: null,
+                    previewLocation: null,
+                    selectedDestination: null,
+                }),
         }),
-    }),
-    {
-      name: "location-storage",
-      storage: createJSONStorage(() => AsyncStorage),
-    }
-  )
+        {
+            name: "location-storage",
+            storage: createJSONStorage(() => AsyncStorage),
+        }
+    )
 );

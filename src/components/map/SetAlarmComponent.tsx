@@ -1,10 +1,12 @@
+import { LOCATION_REPEAT_OPTIONS, LocationRepeatOption } from '@/shared/types/alarmLocation.type';
 import { calculateDistance } from '@/shared/utils';
+import { getAllSounds, resolveSound, resolveSoundId } from '@/shared/utils/soundUtils';
 import { useLocationStore } from '@/store/locationStore';
 import { useMapAlarmStore } from '@/store/mapAlarmStore';
 import { Ionicons } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import Slider from '@react-native-community/slider';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   SafeAreaView,
@@ -28,16 +30,20 @@ const SetAlarmComponent = React.memo(({ isVisible, onClose, currentLocation }: S
   const { selectedLocation, editingAlarm, addAlarm, updateAlarm, setEditingAlarm } = useMapAlarmStore();
   const { selectedDestination } = useLocationStore();
   
+  const availableSounds = useMemo(() => getAllSounds(), []);
+  const defaultSoundId = availableSounds[0]?.id ?? resolveSoundId();
+
   const [lineName, setLineName] = useState('');
   const [timeBeforeArrival, setTimeBeforeArrival] = useState(5);
   const [radius, setRadius] = useState(500);
-  const [sound, setSound] = useState('Classic bell');
-  const [repeat, setRepeat] = useState<'Once' | 'Weekdays' | 'Everyday'>('Once');
+  const [selectedSoundId, setSelectedSoundId] = useState(defaultSoundId);
+  const [repeat, setRepeat] = useState<LocationRepeatOption>('Once');
   const [isLoading, setIsLoading] = useState(false);
+  const selectedSound = useMemo(() => resolveSound(selectedSoundId), [selectedSoundId]);
 
   const timeOptions = [1, 2, 5, 10, 15, 20, 30];
-  const soundOptions = ['Classic bell', 'Gentle chime', 'Alert tone', 'Natural sound'];
-  const repeatOptions: ('Once' | 'Weekdays' | 'Everyday')[] = ['Once', 'Weekdays', 'Everyday'];
+  const soundOptions = availableSounds;
+  const repeatOptions = LOCATION_REPEAT_OPTIONS;
 
   useEffect(() => {
     if (editingAlarm) {
@@ -45,17 +51,17 @@ const SetAlarmComponent = React.memo(({ isVisible, onClose, currentLocation }: S
       setLineName(editingAlarm.lineName);
       setTimeBeforeArrival(editingAlarm.timeBeforeArrival);
       setRadius(editingAlarm.radius);
-      setSound(editingAlarm.sound);
       setRepeat(editingAlarm.repeat);
+      setSelectedSoundId(resolveSoundId(editingAlarm.sound));
     } else {
       // Reset form for new alarm
       setLineName('');
       setTimeBeforeArrival(5);
       setRadius(500);
-      setSound('Classic bell');
-      setRepeat('Once');
+      setSelectedSoundId(defaultSoundId);
+      setRepeat(LOCATION_REPEAT_OPTIONS[0]);
     }
-  }, [editingAlarm, isVisible]);
+  }, [defaultSoundId, editingAlarm, isVisible]);
 
   const handleSaveAlarm = async () => {
     const location = selectedLocation || selectedDestination;
@@ -81,7 +87,7 @@ const SetAlarmComponent = React.memo(({ isVisible, onClose, currentLocation }: S
         radius,
         lineName: lineName.trim(),
         timeBeforeArrival,
-        sound,
+  sound: selectedSoundId,
         repeat,
         isActive: true,
         mapbox_id: location.mapbox_id,
@@ -231,16 +237,19 @@ const SetAlarmComponent = React.memo(({ isVisible, onClose, currentLocation }: S
               {/* Alarm Sound */}
               <View className="mb-6">
                 <Text className="text-white text-base font-medium mb-3">Alarm Sound</Text>
+                <Text className="text-gray-300 text-sm mb-3">
+                  Current: {selectedSound.title}
+                </Text>
                 <View className="flex-row flex-wrap gap-2">
                   {soundOptions.map((soundOption) => (
                     <TouchableOpacity
-                      key={soundOption}
+                      key={soundOption.id}
                       className={`px-4 py-2 rounded-full ${
-                        sound === soundOption ? 'bg-blue-500' : 'bg-gray-700'
+                        selectedSoundId === soundOption.id ? 'bg-blue-500' : 'bg-gray-700'
                       }`}
-                      onPress={() => setSound(soundOption)}
+                      onPress={() => setSelectedSoundId(soundOption.id)}
                     >
-                      <Text className="text-white text-sm">{soundOption}</Text>
+                      <Text className="text-white text-sm">{soundOption.title}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>

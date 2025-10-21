@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { Alert, Modal, View } from 'react-native';
 import { useActiveAlarm } from '../../hooks/useAlarms';
-import { isTimeAlarm } from '../../shared/types';
+import { isTimeAlarm } from '../../shared/types/alarm.type';
 import { Button } from '../ui/button';
 import { Text } from '../ui/text';
 import { AlarmPlayer } from './AlarmPlayer';

@@ -1,4 +1,5 @@
 import { AlarmRepeatType, AlarmType, WeekDay } from '../enums';
+import type { LocationAlarmStatus } from './locationTracking.type';
 import { AlarmSound } from './sound.type';
 
 // Location related types
@@ -25,8 +26,8 @@ export interface BaseAlarm {
   snoozeEnabled: boolean;
   snoozeDuration: number;
   maxSnoozeCount: number;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Date | string;
+  updatedAt: Date | string;
   notificationId?: string;
 }
 
@@ -54,7 +55,7 @@ export type Alarm = TimeAlarm | LocationAlarm;
 export interface AlarmNotification {
   id: string;
   alarmId: string;
-  scheduledTime: Date;
+  scheduledTime: Date | string;
   isTriggered: boolean;
 }
 
@@ -87,7 +88,7 @@ export interface AlarmActions {
   startLocationTracking: () => Promise<void>;
   stopLocationTracking: () => Promise<void>;
   updateLocationAlarms: () => void;
-  getLocationAlarmStatus: (alarmId: string) => any;
+  getLocationAlarmStatus: (alarmId: string) => LocationAlarmStatus | null;
 }
 
 export type AlarmStore = AlarmState & AlarmActions;

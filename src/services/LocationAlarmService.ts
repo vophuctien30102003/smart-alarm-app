@@ -1,4 +1,5 @@
-import { LocationAlarm as Alarm } from '@/shared/types';
+import { LocationAlarm } from '@/shared/types/alarm.type';
+import type { LocationAlarmStatus } from '@/shared/types/locationTracking.type';
 import { calculateDistance } from '@/shared/utils';
 import * as Location from 'expo-location';
 import notificationManager from './NotificationManager';
@@ -6,20 +7,12 @@ import notificationManager from './NotificationManager';
 // import { LocationPermissionManager } from '@/shared/utils/locationPermissions';
 // import { ALARM_CONSTANTS } from '@/shared/constants';
 
-export interface LocationAlarmConfig {
-  alarm: Alarm;
-  currentLocation: Location.LocationObject;
-  isInRange: boolean;
-  distance: number;
-  estimatedArrivalTime?: number;
-}
-
 class LocationAlarmService {
   private static instance: LocationAlarmService;
-  private activeLocationAlarms: Map<string, LocationAlarmConfig> = new Map();
+  private activeLocationAlarms: Map<string, LocationAlarmStatus> = new Map();
   private locationSubscription: Location.LocationSubscription | null = null;
   private isTracking = false;
-  private onAlarmTrigger: ((alarm: Alarm) => void) | null = null;
+  private onAlarmTrigger: ((alarm: LocationAlarm) => void) | null = null;
 
   static getInstance(): LocationAlarmService {
     if (!LocationAlarmService.instance) {
@@ -28,7 +21,7 @@ class LocationAlarmService {
     return LocationAlarmService.instance;
   }
 
-  setAlarmTriggerCallback(callback: (alarm: Alarm) => void) {
+  setAlarmTriggerCallback(callback: (alarm: LocationAlarm) => void) {
     this.onAlarmTrigger = callback;
   }
 
@@ -70,12 +63,15 @@ class LocationAlarmService {
       this.locationSubscription.remove();
       this.locationSubscription = null;
     }
+    if (!this.isTracking) {
+      return;
+    }
     this.isTracking = false;
     this.activeLocationAlarms.clear();
     console.log('Location tracking stopped');
   }
 
-  addLocationAlarm(alarm: Alarm): void {
+  addLocationAlarm(alarm: LocationAlarm): void {
     if (!alarm.targetLocation) {
       console.warn('Attempted to add location alarm without target location');
       return;
@@ -83,7 +79,7 @@ class LocationAlarmService {
 
     this.activeLocationAlarms.set(alarm.id, {
       alarm,
-      currentLocation: {} as Location.LocationObject,
+      currentLocation: null,
       isInRange: false,
       distance: Infinity,
     });
@@ -91,19 +87,30 @@ class LocationAlarmService {
     console.log(`Added location alarm: ${alarm.label} for location ${alarm.targetLocation.address}`);
   }
 
-  removeLocationAlarm(alarmId: string): void {
+  async removeLocationAlarm(alarmId: string): Promise<void> {
     this.activeLocationAlarms.delete(alarmId);
     console.log(`Removed location alarm: ${alarmId}`);
+
+    if (this.activeLocationAlarms.size === 0) {
+      await this.stopLocationTracking();
+    }
   }
 
-  updateLocationAlarms(alarms: Alarm[]): void {
+  updateLocationAlarms(alarms: LocationAlarm[]): void {
     this.activeLocationAlarms.clear();
 
-    alarms
-      .filter(alarm => alarm.isEnabled && alarm.targetLocation)
-      .forEach(alarm => this.addLocationAlarm(alarm));
+    const enabledAlarms = alarms.filter(alarm => alarm.isEnabled && alarm.targetLocation);
+    enabledAlarms.forEach(alarm => this.addLocationAlarm(alarm));
 
-    console.log(`Updated location alarms. Active count: ${this.activeLocationAlarms.size}`);
+    if (enabledAlarms.length === 0) {
+      console.log('No location alarms to track');
+    } else {
+      console.log(`Updated location alarms. Active count: ${this.activeLocationAlarms.size}`);
+    }
+
+    if (this.activeLocationAlarms.size === 0) {
+      void this.stopLocationTracking();
+    }
   }
 
   private async handleLocationUpdate(location: Location.LocationObject): Promise<void> {
@@ -112,19 +119,21 @@ class LocationAlarmService {
       
       if (!alarm.targetLocation) continue;
 
-      const distance = calculateDistance(
+      const distanceKm = calculateDistance(
         {
           latitude: location.coords.latitude,
-          longitude: location.coords.longitude
+          longitude: location.coords.longitude,
         },
         alarm.targetLocation.coordinates
-      ) * 1000;
+      );
 
-      const radiusMeters = alarm.radiusMeters || 100;
+      const distance = distanceKm * 1000;
+
+  const radiusMeters = alarm.radiusMeters || 100;
       const wasInRange = config.isInRange;
       const isInRange = distance <= radiusMeters;
 
-      const updatedConfig: LocationAlarmConfig = {
+      const updatedConfig: LocationAlarmStatus = {
         ...config,
         currentLocation: location,
         isInRange,
@@ -141,7 +150,7 @@ class LocationAlarmService {
     }
   }
 
-  private shouldTriggerAlarm(alarm: Alarm, wasInRange: boolean, isInRange: boolean): boolean {
+  private shouldTriggerAlarm(alarm: LocationAlarm, wasInRange: boolean, isInRange: boolean): boolean {
     if (alarm.arrivalTrigger) {
       return !wasInRange && isInRange;
     } else {
@@ -149,7 +158,7 @@ class LocationAlarmService {
     }
   }
 
-  private async triggerLocationAlarm(alarm: Alarm, config: LocationAlarmConfig): Promise<void> {
+  private async triggerLocationAlarm(alarm: LocationAlarm, config: LocationAlarmStatus): Promise<void> {
     console.log(`Triggering location alarm: ${alarm.label}`);
     
     const title = alarm.arrivalTrigger 
@@ -168,11 +177,13 @@ class LocationAlarmService {
     // They are managed differently than time-based alarms
   }
 
-  getActiveLocationAlarms(): LocationAlarmConfig[] {
+  // TODO: derive accurate arrival estimate once travel mode is known
+
+  getActiveLocationAlarms(): LocationAlarmStatus[] {
     return Array.from(this.activeLocationAlarms.values());
   }
 
-  getLocationAlarmStatus(alarmId: string): LocationAlarmConfig | null {
+  getLocationAlarmStatus(alarmId: string): LocationAlarmStatus | null {
     return this.activeLocationAlarms.get(alarmId) || null;
   }
 

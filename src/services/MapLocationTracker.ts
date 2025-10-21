@@ -1,8 +1,13 @@
+import { convertSoundToAlarmSound } from '@/shared/constants/sounds';
+import { AlarmType } from '@/shared/enums';
+import type { LocationAlarm } from '@/shared/types/alarm.type';
+import { LocationAlarmType, legacyRepeatToEnum } from '@/shared/types/alarmLocation.type';
 import { calculateDistance } from '@/shared/utils';
-import { Audio } from 'expo-av';
-import * as Haptics from 'expo-haptics';
+import { resolveSound } from '@/shared/utils/soundUtils';
+import { useAlarmStore } from '@/store/alarmStore';
+import { useMapAlarmStore } from '@/store/mapAlarmStore';
 import * as Location from 'expo-location';
-import { MapAlarm } from '../shared/types';
+import notificationManager from './NotificationManager';
 // TODO: Migrate to shared utilities after MapViewComponent is stable
 // import { LocationPermissionManager } from '@/shared/utils/locationPermissions';
 // import { ALARM_CONSTANTS } from '@/shared/constants';
@@ -11,9 +16,8 @@ export class MapLocationTracker {
   private static instance: MapLocationTracker;
   private isTracking = false;
   private trackingInterval: any = null;
-  private activeAlarms: Map<string, MapAlarm> = new Map();
+  private activeAlarms: Map<string, LocationAlarmType> = new Map();
   private triggeredAlarms: Set<string> = new Set(); // Prevent multiple triggers
-  private sound: Audio.Sound | null = null;
 
   private constructor() {}
 
@@ -24,7 +28,7 @@ export class MapLocationTracker {
     return MapLocationTracker.instance;
   }
 
-  async startTracking(alarms: MapAlarm[]): Promise<void> {
+  async startTracking(alarms: LocationAlarmType[]): Promise<void> {
     if (this.isTracking) {
       console.log('🔄 MapLocationTracker: Already tracking');
       return;
@@ -42,8 +46,12 @@ export class MapLocationTracker {
         console.warn('⚠️ MapLocationTracker: Background permission not granted - limited functionality');
       }
 
-      // Update active alarms
-      this.updateActiveAlarms(alarms);
+      this.activeAlarms.clear();
+      this.triggeredAlarms.clear();
+
+      alarms
+        .filter(alarm => alarm.isActive)
+        .forEach(alarm => this.activeAlarms.set(alarm.id, alarm));
 
       if (this.activeAlarms.size === 0) {
         console.log('No active alarms to track');
@@ -74,14 +82,9 @@ export class MapLocationTracker {
     this.isTracking = false;
     this.activeAlarms.clear();
     this.triggeredAlarms.clear();
-
-    if (this.sound) {
-      this.sound.unloadAsync().catch(console.error);
-      this.sound = null;
-    }
   }
 
-  updateActiveAlarms(alarms: MapAlarm[]): void {
+  updateActiveAlarms(alarms: LocationAlarmType[]): void {
     this.activeAlarms.clear();
     this.triggeredAlarms.clear();
 
@@ -94,7 +97,7 @@ export class MapLocationTracker {
     if (this.activeAlarms.size === 0 && this.isTracking) {
       this.stopTracking();
     } else if (this.activeAlarms.size > 0 && !this.isTracking) {
-      this.startTracking(alarms);
+      void this.startTracking(alarms);
     }
   }
 
@@ -119,64 +122,106 @@ export class MapLocationTracker {
           continue;
         }
 
-        const distance = calculateDistance(
+        const distanceKm = calculateDistance(
           { latitude: currentCoords.latitude, longitude: currentCoords.longitude },
           { latitude: alarm.lat, longitude: alarm.long }
         );
 
-        const distanceInMeters = distance * 1000;
+        const distanceMeters = distanceKm * 1000;
 
+        const wasTriggered = this.triggeredAlarms.has(alarmId);
 
-        if (distanceInMeters <= alarm.radius) {
+        if (distanceMeters <= alarm.radius) {
+          if (wasTriggered) {
+            continue;
+          }
           console.log(`🚨 ALARM TRIGGERED! ${alarm.lineName}`);
-          await this.triggerAlarm(alarm, distance);
+          await this.triggerAlarm(alarm, distanceKm);
           
           this.triggeredAlarms.add(alarmId);
           
           if (alarm.repeat === 'Once') {
+            this.activeAlarms.delete(alarmId);
           }
+        } else if (wasTriggered) {
+          this.triggeredAlarms.delete(alarmId);
         }
       }
+
+      if (this.isTracking && this.activeAlarms.size === 0) {
+        this.stopTracking();
+        }
 
     } catch (error) {
       console.error('Error checking location:', error);
     }
   }
 
-  private async triggerAlarm(alarm: MapAlarm, distance: number): Promise<void> {
+  private async triggerAlarm(alarm: LocationAlarmType, distanceKm: number): Promise<void> {
     try {
       console.log(`🔔 Triggering alarm: ${alarm.lineName}`);
 
-      // Haptic feedback
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      const alarmStore = useAlarmStore.getState();
+      const mapStore = useMapAlarmStore.getState();
 
-      // Play sound
-      await this.playAlarmSound(alarm);
+      const locationAlarm = this.mapToLocationAlarm(alarm);
 
-      // Log alarm trigger (in a real app, you might want to save this to history)
-      console.log(`📝 Alarm logged: ${alarm.lineName} at ${distance.toFixed(2)}km`);
+      alarmStore.triggerAlarm(locationAlarm);
+
+      await notificationManager.showLocationAlarmNotification(
+        locationAlarm,
+        `Approaching ${alarm.name}`,
+        `${alarm.lineName} is within ${alarm.radius}m`
+      );
+
+      if (alarm.repeat === 'Once') {
+        await mapStore.updateAlarm(alarm.id, { isActive: false });
+      }
+
+      console.log(`📝 Alarm logged: ${alarm.lineName} at ${distanceKm.toFixed(2)}km`);
 
     } catch (error) {
       console.error('Error triggering alarm:', error);
     }
   }
 
-  private async playAlarmSound(alarm: MapAlarm): Promise<void> {
-    try {
-      if (this.sound) {
-        await this.sound.unloadAsync();
-        this.sound = null;
-      }
+  private mapToLocationAlarm(alarm: LocationAlarmType): LocationAlarm {
+    const soundData = resolveSound(alarm.sound);
+    const alarmSound = convertSoundToAlarmSound(soundData);
 
-      setTimeout(async () => {
-        if (this.sound) {
-          await this.sound.unloadAsync();
-          this.sound = null;
-        }
-      }, 10000); 
-    } catch (error) {
-      console.error('Error playing alarm sound:', error);
-    }
+    const repeatType = legacyRepeatToEnum(alarm.repeat);
+
+    return {
+      id: alarm.id,
+      label: alarm.lineName || alarm.name,
+      isEnabled: true,
+      sound: alarmSound,
+      volume: 1,
+      vibrate: true,
+      snoozeEnabled: false,
+      snoozeDuration: 5,
+      maxSnoozeCount: 0,
+      createdAt:
+        typeof alarm.timestamp === 'string'
+          ? alarm.timestamp
+          : alarm.timestamp?.toISOString?.() ?? new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      type: AlarmType.LOCATION,
+      targetLocation: {
+        id: alarm.mapbox_id || alarm.id,
+        name: alarm.name,
+        address: alarm.address,
+        coordinates: {
+          latitude: alarm.lat,
+          longitude: alarm.long,
+        },
+        mapbox_id: alarm.mapbox_id,
+      },
+      radiusMeters: alarm.radius,
+      timeBeforeArrival: alarm.timeBeforeArrival,
+      arrivalTrigger: true,
+      repeatType,
+    };
   }
 
   // Reset triggered alarms (call this when alarms are updated)

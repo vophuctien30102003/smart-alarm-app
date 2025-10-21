@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { Text } from "../../components/ui/text";
 import { useAlarms } from "../../hooks/useAlarms";
-import { Alarm, isTimeAlarm } from "../../shared/types";
+import { Alarm, isTimeAlarm } from "../../shared/types/alarm.type";
 
 interface Props {
     alarms: Alarm[];

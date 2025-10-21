@@ -1,4 +1,4 @@
-import { Sound } from "@/shared/types";
+import { Sound } from "@/shared/types/sound.type";
 import { getAllSounds } from "@/shared/utils";
 import { useAudioPlayer } from "expo-audio";
 import { useCallback, useMemo, useState } from "react";

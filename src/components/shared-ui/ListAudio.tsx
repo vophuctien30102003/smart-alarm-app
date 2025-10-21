@@ -1,4 +1,4 @@
-import { Sound } from "@/shared/types";
+import { Sound } from "@/shared/types/sound.type";
 import { useCallback, useEffect, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { useAudioManager } from "../../hooks/useAudioManager";

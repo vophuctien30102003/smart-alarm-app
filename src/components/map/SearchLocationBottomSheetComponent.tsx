@@ -12,7 +12,7 @@ import {
     View,
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { LegacyLocationType, MapAlarm } from "../../shared/types";
+import { LocationType, LocationAlarmType } from "../../shared/types/alarmLocation.type";
 import { calculateDistance } from "../../shared/utils/locationUtils";
 import { Text } from "../ui";
 
@@ -41,7 +41,7 @@ const SearchLocationBottomSheetComponent = React.memo(({ currentLocation }: Sear
     const recentAlarms = useMemo(() => getRecentAlarms(), [getRecentAlarms]);
     
     const handleLocationSelect = useCallback((item: any) => {
-        const location: LegacyLocationType = {
+        const location: LocationType = {
             id: item.id,
             name: item.name,
             address: item.address,
@@ -58,8 +58,8 @@ const SearchLocationBottomSheetComponent = React.memo(({ currentLocation }: Sear
         setSearchQuery("");
     }, [setSelectedLocation, setSelectedDestination, setCurrentView]);
     
-    const handleRecentAlarmSelect = useCallback((alarm: MapAlarm) => {
-        const location: LegacyLocationType = {
+    const handleRecentAlarmSelect = useCallback((alarm: LocationAlarmType) => {
+        const location: LocationType = {
             id: alarm.id,
             name: alarm.name,
             address: alarm.address,

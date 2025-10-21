@@ -1,3 +1,4 @@
+import { resolveSound } from '@/shared/utils/soundUtils';
 import { useMapAlarmStore } from "@/store/mapAlarmStore";
 import { Ionicons } from "@expo/vector-icons";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
@@ -11,7 +12,7 @@ import {
   View,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { MapAlarm } from "../../shared/types";
+import { LocationAlarmType } from "../../shared/types/alarmLocation.type";
 
 interface AlarmHistoryComponentProps {
   isVisible: boolean;
@@ -44,13 +45,13 @@ const AlarmHistoryComponent = React.memo(({ isVisible, onClose }: AlarmHistoryCo
     }
   };
 
-  const handleEditAlarm = (alarm: MapAlarm) => {
+  const handleEditAlarm = (alarm: LocationAlarmType) => {
     setEditingAlarm(alarm);
     setCurrentView('setAlarm');
     onClose();
   };
 
-  const handleDeleteAlarm = (alarm: MapAlarm) => {
+  const handleDeleteAlarm = (alarm: LocationAlarmType) => {
     Alert.alert(
       'Delete Alarm',
       `Are you sure you want to delete "${alarm.lineName}"?`,
@@ -72,7 +73,7 @@ const AlarmHistoryComponent = React.memo(({ isVisible, onClose }: AlarmHistoryCo
     );
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | string) => {
     return new Date(date).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -81,7 +82,7 @@ const AlarmHistoryComponent = React.memo(({ isVisible, onClose }: AlarmHistoryCo
     });
   };
 
-  const renderAlarmItem = (alarm: MapAlarm) => (
+  const renderAlarmItem = (alarm: LocationAlarmType) => (
     <View key={alarm.id} className="bg-gray-800 mx-4 mb-3 rounded-xl p-4">
       <View className="flex-row justify-between items-start mb-3">
         <View className="flex-1">
@@ -115,7 +116,7 @@ const AlarmHistoryComponent = React.memo(({ isVisible, onClose }: AlarmHistoryCo
         </View>
         <View className="bg-orange-500/20 px-3 py-1 rounded-full">
           <Text className="text-orange-400 text-xs">
-            {alarm.sound}
+            {resolveSound(alarm.sound).title}
           </Text>
         </View>
       </View>

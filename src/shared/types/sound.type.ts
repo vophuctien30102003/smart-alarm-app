@@ -1,8 +1,10 @@
+export type SoundUri = string | number;
+
 export interface Sound {
   id: string;
   title: string;
   name?: string;
-  uri: any; // Can be string, number, or require() result
+  uri: SoundUri; // Remote URI or require() asset identifier
   filename?: string;
   isDefault?: boolean;
 }
@@ -14,7 +16,7 @@ export type LegacySound = Sound;
 export interface AlarmSound {
   id: string;
   name: string;
-  uri: string | number;
+  uri: SoundUri;
   isDefault?: boolean;
 }
 

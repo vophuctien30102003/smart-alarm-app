@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { isLocationAlarm, isTimeAlarm } from '../shared/types';
+import { isLocationAlarm, isTimeAlarm } from '../shared/types/alarm.type';
 import { useAlarmStore } from '../store/alarmStore';
 
 export const useAlarms = () => {

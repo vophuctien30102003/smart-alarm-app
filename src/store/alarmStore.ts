@@ -5,7 +5,16 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import LocationAlarmService from '../services/LocationAlarmService';
 import notificationManager from '../services/NotificationManager';
-import { Alarm, AlarmStore, isLocationAlarm, LocationAlarm, LocationTarget, TimeAlarm } from '../shared/types';
+import {
+  Alarm,
+  AlarmStore,
+  isLocationAlarm,
+  isTimeAlarm,
+  LocationAlarm,
+  LocationTarget,
+  TimeAlarm,
+} from '../shared/types/alarm.type';
+import type { LocationAlarmStatus } from '../shared/types/locationTracking.type';
 import { generateTimestampId } from '../shared/utils/idUtils';
 
 const locationService = LocationAlarmService.getInstance();
@@ -25,11 +34,12 @@ export const useAlarmStore = create<AlarmStore>()(
 
       addAlarm: async (alarm: Omit<Alarm, 'id' | 'createdAt' | 'updatedAt'>) => {
         try {
+          const nowIso = new Date().toISOString();
           const newAlarm: Alarm = {
             ...alarm,
             id: generateTimestampId(),
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            createdAt: nowIso,
+            updatedAt: nowIso,
             volume: alarm.volume || DEFAULT_VOLUME,
             snoozeDuration: alarm.snoozeDuration || DEFAULT_SNOOZE_DURATION,
           } as Alarm;
@@ -61,6 +71,11 @@ export const useAlarmStore = create<AlarmStore>()(
             Alert.alert('Location Error', 'Failed to start location tracking for alarm');
           }
         } else {
+          if (!isTimeAlarm(alarm)) {
+            console.warn('Attempted to schedule notification for non-time alarm');
+            return;
+          }
+
           const notificationId = await notificationManager.scheduleAlarmNotification(alarm);
           if (notificationId) {
             set((state) => ({
@@ -84,7 +99,7 @@ export const useAlarmStore = create<AlarmStore>()(
           const updatedAlarm: Alarm = {
             ...alarm,
             ...updates,
-            updatedAt: new Date(),
+            updatedAt: new Date().toISOString(),
           } as Alarm;
 
           set((state) => ({
@@ -107,7 +122,7 @@ export const useAlarmStore = create<AlarmStore>()(
           await notificationManager.cancelAlarmNotification(alarm.notificationId);
         }
         if (isLocationAlarm(alarm)) {
-          locationService.removeLocationAlarm(alarm.id);
+            await locationService.removeLocationAlarm(alarm.id);
         }
       },
 
@@ -280,7 +295,7 @@ export const useAlarmStore = create<AlarmStore>()(
         }
       },
       getLocationAlarmStatus: (alarmId: string) => {
-        return locationService.getLocationAlarmStatus(alarmId);
+        return locationService.getLocationAlarmStatus(alarmId) as LocationAlarmStatus | null;
       },
     }),
     {

@@ -21,6 +21,13 @@ export const parseTimeString = (timeString: string): { hours: number; minutes: n
   return { hours, minutes };
 };
 
+export const timeStringToDate = (timeString: string): Date => {
+  const { hours, minutes } = parseTimeString(timeString);
+  const date = new Date();
+  date.setHours(hours, minutes, 0, 0);
+  return date;
+};
+
 export const mapJSDayToWeekDay = (jsDay: number): WeekDay => {
   const mapping: { [key: number]: WeekDay } = {
     0: WeekDay.SUNDAY,
@@ -100,4 +107,28 @@ export const generateAlarmId = (): string => {
 
 export const calculateSnoozeTime = (snoozeMinutes: number): Date => {
   return addDays(new Date(), snoozeMinutes / (24 * 60));
+};
+
+export const addMinutesToTimeString = (time: string, minutesToAdd: number): string => {
+  const { hours, minutes } = parseTimeString(time);
+  const totalMinutes = (hours * 60 + minutes + minutesToAdd + 24 * 60) % (24 * 60);
+  const newHours = Math.floor(totalMinutes / 60);
+  const newMinutes = totalMinutes % 60;
+  return `${newHours.toString().padStart(2, '0')}:${newMinutes.toString().padStart(2, '0')}`;
+};
+
+export const getMinutesBetweenTimes = (start: string, end: string): number => {
+  const startParts = parseTimeString(start);
+  const endParts = parseTimeString(end);
+  let diff = (endParts.hours * 60 + endParts.minutes) - (startParts.hours * 60 + startParts.minutes);
+  if (diff < 0) {
+    diff += 24 * 60;
+  }
+  return diff;
+};
+
+export const formatDurationFromMinutes = (minutes: number): string => {
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
 };

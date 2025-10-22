@@ -11,6 +11,7 @@ export enum WeekDay {
 export enum AlarmType {
   TIME = 'time',
   LOCATION = 'location',
+  SLEEP = 'sleep',
 }
 
 export enum AlarmRepeatType {

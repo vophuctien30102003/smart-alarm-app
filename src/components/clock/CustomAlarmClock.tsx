@@ -1,18 +1,65 @@
-import { useState } from "react";
-import { TouchableOpacity, View } from "react-native";
-import { Text } from "../ui/text";
+import Slider from "@react-native-community/slider";
 import { ArrowDown2 } from "iconsax-react-native";
+import { useMemo, useState } from "react";
+import { TouchableOpacity, View } from "react-native";
+import { Switch } from "../ui";
+import { Text } from "../ui/text";
 
-export function CustomAlarmClock() {
-    const [gentleWakeUp] = useState("5 min");
-    const [snooze] = useState("10 min");
-    const [alarmVolume] = useState(70);
-    const [alarmSound] = useState("Classic bell");
-    const [vibration, setVibration] = useState(true);
-    const [showDetails, setShowDetails] = useState(false);
+interface SoundOption {
+    id: string;
+    title: string;
+}
+
+interface Props {
+    gentleWakeMinutes: number;
+    onSelectGentleWake: (value: number) => void;
+    gentleWakeOptions: number[];
+    snoozeEnabled: boolean;
+    onToggleSnooze: (value: boolean) => void;
+    snoozeMinutes: number;
+    snoozeOptions: number[];
+    onSelectSnooze: (value: number) => void;
+    volume: number;
+    onChangeVolume: (value: number) => void;
+    soundId: string;
+    soundOptions: SoundOption[];
+    onSelectSound: (value: string) => void;
+    vibrate: boolean;
+    onToggleVibrate: (value: boolean) => void;
+}
+
+const formatMinutesLabel = (minutes: number): string => {
+    if (minutes === 0) {
+        return "Off";
+    }
+    return `${minutes} min`;
+};
+
+export function CustomAlarmClock({
+    gentleWakeMinutes,
+    onSelectGentleWake,
+    gentleWakeOptions,
+    snoozeEnabled,
+    onToggleSnooze,
+    snoozeMinutes,
+    snoozeOptions,
+    onSelectSnooze,
+    volume,
+    onChangeVolume,
+    soundId,
+    soundOptions,
+    onSelectSound,
+    vibrate,
+    onToggleVibrate,
+}: Props) {
+    const [showDetails, setShowDetails] = useState(true);
+
+    const currentSoundLabel = useMemo(() => {
+        return soundOptions.find(option => option.id === soundId)?.title ?? "Default";
+    }, [soundId, soundOptions]);
 
     return (
-        <>
+        <View className="mt-8">
             <View className="flex-row justify-between items-center py-3">
                 <Text className="text-[#F8FAFC] text-[17px] font-semibold">
                     Custom alarm
@@ -20,98 +67,162 @@ export function CustomAlarmClock() {
                 <TouchableOpacity
                     className="bg-[#9887C340] rounded-full p-2"
                     onPress={() => setShowDetails(!showDetails)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Toggle custom alarm settings"
                 >
-                    <ArrowDown2 size="24" color="#d9e3f0" />
+                    <ArrowDown2
+                        size="24"
+                        color="#d9e3f0"
+                        style={{ transform: [{ rotate: showDetails ? "180deg" : "0deg" }] }}
+                    />
                 </TouchableOpacity>
             </View>
 
             {showDetails && (
-                <View>
-                    <View className="flex-row justify-between items-center py-3 border-b border-white/10">
-                        <View className="flex-row items-center flex-1">
-                            <Text className="text-base mr-3">🎵</Text>
-                            <Text className="text-white text-base font-medium">
-                                Gentle wake up
-                            </Text>
-                        </View>
-                        <Text className="text-[#8179FF] text-sm font-medium">
-                            {gentleWakeUp}
-                        </Text>
-                    </View>
+                <View className="space-y-4">
+                    <SettingRow
+                        title="Gentle wake up"
+                        icon="🎵"
+                        valueLabel={formatMinutesLabel(gentleWakeMinutes)}
+                    >
+                        <OptionChips
+                            options={gentleWakeOptions}
+                            selectedValue={gentleWakeMinutes}
+                            onSelect={onSelectGentleWake}
+                        />
+                    </SettingRow>
 
-                    <View className="flex-row justify-between items-center py-3 border-b border-white/10">
-                        <View className="flex-row items-center flex-1">
-                            <Text className="text-base mr-3">⏰</Text>
-                            <Text className="text-white text-base font-medium">
-                                Snooze
-                            </Text>
-                        </View>
-                        <Text className="text-[#8179FF] text-sm font-medium">
-                            {snooze}
-                        </Text>
-                    </View>
-
-                    <View className="flex-row justify-between items-center py-3 border-b border-white/10">
-                        <View className="flex-row items-center flex-1">
-                            <Text className="text-base mr-3">🔊</Text>
-                            <Text className="text-white text-base font-medium">
-                                Alarm volume
-                            </Text>
-                        </View>
-                        <View className="flex-row items-center flex-1 ml-7">
-                            <Text className="text-xs text-gray-400">Min</Text>
-                            <View className="flex-1 h-1 bg-white/20 rounded mx-3 relative">
-                                <View
-                                    className="h-1 bg-[#8179FF] rounded"
-                                    style={{ width: `${alarmVolume}%` }}
-                                />
-                                <View
-                                    className="absolute top-[-6px] w-4 h-4 rounded-full bg-white"
-                                    style={{ left: `${alarmVolume - 5}%` }}
-                                />
-                            </View>
-                            <Text className="text-xs text-gray-400">Max</Text>
-                        </View>
-                    </View>
-
-                    {/* Alarm Sound */}
-                    <View className="flex-row justify-between items-center py-3 border-b border-white/10">
-                        <View className="flex-row items-center flex-1">
-                            <Text className="text-base mr-3">🎵</Text>
-                            <Text className="text-white text-base font-medium">
-                                Alarm sound
-                            </Text>
-                        </View>
-                        <Text className="text-[#8179FF] text-sm font-medium">
-                            {alarmSound}
-                        </Text>
-                    </View>
-
-                    {/* Vibration */}
-                    <View className="flex-row justify-between items-center py-3">
-                        <View className="flex-row items-center flex-1">
-                            <Text className="text-base mr-3">📳</Text>
-                            <Text className="text-white text-base font-medium">
-                                Vibration
-                            </Text>
-                        </View>
-                        <TouchableOpacity
-                            className={`w-[50px] h-7 rounded-full p-0.5 justify-center ${
-                                vibration ? "bg-[#8179FF]" : "bg-white/20"
-                            }`}
-                            onPress={() => setVibration(!vibration)}
-                        >
-                            <View
-                                className={`w-6 h-6 rounded-full bg-white ${
-                                    vibration
-                                        ? "translate-x-[22px]"
-                                        : "translate-x-0"
-                                }`}
+                    <SettingRow
+                        title="Snooze"
+                        icon="⏰"
+                        valueLabel={snoozeEnabled ? formatMinutesLabel(snoozeMinutes) : "Off"}
+                    >
+                        <View className="flex-row items-center justify-between">
+                            <Switch
+                                value={snoozeEnabled}
+                                onValueChange={onToggleSnooze}
+                                accessibilityLabel="Toggle snooze"
                             />
-                        </TouchableOpacity>
-                    </View>
+                            <OptionChips
+                                options={snoozeOptions}
+                                selectedValue={snoozeMinutes}
+                                onSelect={onSelectSnooze}
+                                disabled={!snoozeEnabled}
+                            />
+                        </View>
+                    </SettingRow>
+
+                    <SettingRow
+                        title="Alarm volume"
+                        icon="🔊"
+                        valueLabel={`${Math.round(volume * 100)}%`}
+                    >
+                        <View className="mt-3">
+                            <Slider
+                                value={volume}
+                                onValueChange={onChangeVolume}
+                                minimumValue={0}
+                                maximumValue={1}
+                                step={0.01}
+                                minimumTrackTintColor="#8179FF"
+                                maximumTrackTintColor="rgba(255,255,255,0.2)"
+                                thumbTintColor="#FFFFFF"
+                                accessibilityLabel="Adjust alarm volume"
+                            />
+                        </View>
+                    </SettingRow>
+
+                    <SettingRow
+                        title="Alarm sound"
+                        icon="🎶"
+                        valueLabel={currentSoundLabel}
+                    >
+                        <OptionChips
+                            options={soundOptions.map(option => option.id)}
+                            selectedValue={soundId}
+                            onSelect={onSelectSound}
+                            renderLabel={(value) => soundOptions.find(option => option.id === value)?.title ?? value}
+                        />
+                    </SettingRow>
+
+                    <SettingRow
+                        title="Vibration"
+                        icon="📳"
+                        valueLabel={vibrate ? "On" : "Off"}
+                    >
+                        <Switch
+                            value={vibrate}
+                            onValueChange={onToggleVibrate}
+                            accessibilityLabel="Toggle vibration"
+                        />
+                    </SettingRow>
                 </View>
             )}
-        </>
+        </View>
+    );
+}
+
+interface SettingRowProps {
+    title: string;
+    icon: string;
+    valueLabel: string;
+    children: React.ReactNode;
+}
+
+function SettingRow({ title, icon, valueLabel, children }: SettingRowProps) {
+    return (
+        <View className="border border-white/10 rounded-2xl p-4 bg-white/5">
+            <View className="flex-row justify-between items-center mb-3">
+                <View className="flex-row items-center">
+                    <Text className="text-base mr-3">{icon}</Text>
+                    <Text className="text-white text-base font-medium">
+                        {title}
+                    </Text>
+                </View>
+                <Text className="text-[#8179FF] text-sm font-medium">
+                    {valueLabel}
+                </Text>
+            </View>
+            {children}
+        </View>
+    );
+}
+
+interface OptionChipsProps<T extends string | number> {
+    options: T[];
+    selectedValue: T;
+    onSelect: (value: T) => void;
+    disabled?: boolean;
+    renderLabel?: (value: T) => string;
+}
+
+function OptionChips<T extends string | number>({
+    options,
+    selectedValue,
+    onSelect,
+    disabled = false,
+    renderLabel,
+}: OptionChipsProps<T>) {
+    return (
+        <View className="flex-row flex-wrap gap-2">
+            {options.map(option => {
+                const isSelected = option === selectedValue;
+                const label = renderLabel ? renderLabel(option) : formatMinutesLabel(Number(option));
+                return (
+                    <TouchableOpacity
+                        key={String(option)}
+                        className={`px-3 py-1 rounded-full border ${
+                            isSelected ? "bg-[#8179FF] border-transparent" : "bg-white/10 border-white/20"
+                        } ${disabled ? "opacity-40" : ""}`}
+                        disabled={disabled}
+                        onPress={() => onSelect(option)}
+                    >
+                        <Text className="text-white text-sm font-medium">
+                            {label}
+                        </Text>
+                    </TouchableOpacity>
+                );
+            })}
+        </View>
     );
 }

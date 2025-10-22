@@ -3,16 +3,29 @@ import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { WeekDay } from '../shared/enums';
-import { Alarm } from '../shared/types/alarm.type';
+import { LocationAlarm, SleepAlarm, TimeAlarm } from '../shared/types/alarm.type';
+import { formatDurationFromMinutes, getMinutesBetweenTimes, parseTimeString } from '../shared/utils/timeUtils';
 
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
+  handleNotification: async () => {
+    const baseResponse = {
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    };
+
+    if (Platform.OS === 'android') {
+      return {
+        ...baseResponse,
+        shouldShowBanner: false,
+        shouldShowList: false,
+        shouldShowAlert: true,
+      };
+    }
+
+    return baseResponse;
+  },
 });
 
 const ALARM_CHANNEL_ID = 'alarms';
@@ -125,7 +138,7 @@ export class NotificationManager {
     }
   }
 
-  async scheduleAlarmNotification(alarm: Alarm): Promise<string | null> {
+  async scheduleAlarmNotification(alarm: TimeAlarm): Promise<string | null> {
     try {
       await this.initialize();
 
@@ -163,7 +176,201 @@ export class NotificationManager {
     }
   }
 
-  private calculateNextTriggerDate(alarm: Alarm): Date | null {
+  async scheduleSleepAlarmNotifications(alarm: SleepAlarm): Promise<{
+    bedtimeIds: string[];
+    wakeIds: string[];
+  }> {
+    const bedtimeIds: string[] = [];
+    const wakeIds: string[] = [];
+
+    try {
+      await this.initialize();
+
+      const sleepMinutes = getMinutesBetweenTimes(alarm.bedtime, alarm.wakeUpTime);
+      const sleepDurationDisplay = formatDurationFromMinutes(sleepMinutes);
+
+      const bedtimeContent = {
+        title: '🛌 Bedtime Alarm',
+        body: `Đã đến giờ đi ngủ. Lịch ngủ: ${sleepDurationDisplay} giờ.`,
+      };
+
+      const wakeContent = {
+        title: '☀️ Wake Up Alarm',
+        body: 'Đến giờ thức dậy. Chúc bạn một ngày tốt lành!',
+      };
+
+      const bedtimeData = {
+        alarmId: alarm.id,
+        alarmLabel: alarm.label,
+        type: 'sleep-alarm',
+        sleepEvent: 'bedtime' as const,
+      };
+
+      const wakeData = {
+        alarmId: alarm.id,
+        alarmLabel: alarm.label,
+        type: 'sleep-alarm',
+        sleepEvent: 'wake' as const,
+      };
+
+      const { hours: bedtimeHour, minutes: bedtimeMinute } = parseTimeString(alarm.bedtime);
+      const { hours: wakeHour, minutes: wakeMinute } = parseTimeString(alarm.wakeUpTime);
+      const bedtimeTotalMinutes = bedtimeHour * 60 + bedtimeMinute;
+      const wakeTotalMinutes = wakeHour * 60 + wakeMinute;
+
+      if (!alarm.repeatDays || alarm.repeatDays.length === 0) {
+        const bedtimeDate = this.getNextDateForTime(alarm.bedtime);
+        const wakeReferenceDate = new Date(bedtimeDate);
+        const wakeDate = this.getNextDateForTime(alarm.wakeUpTime, wakeReferenceDate);
+
+        const bedtimeTrigger: Notifications.DateTriggerInput = {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          channelId: ALARM_CHANNEL_ID,
+          date: bedtimeDate,
+        };
+
+        const bedtimeId = await Notifications.scheduleNotificationAsync({
+          content: {
+            ...bedtimeContent,
+            sound: true,
+            priority: Notifications.AndroidNotificationPriority.MAX,
+            data: bedtimeData,
+          },
+          trigger: bedtimeTrigger,
+        });
+        bedtimeIds.push(bedtimeId);
+
+        const wakeTrigger: Notifications.DateTriggerInput = {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          channelId: ALARM_CHANNEL_ID,
+          date: wakeDate,
+        };
+
+        const wakeId = await Notifications.scheduleNotificationAsync({
+          content: {
+            ...wakeContent,
+            sound: true,
+            priority: Notifications.AndroidNotificationPriority.MAX,
+            data: wakeData,
+          },
+          trigger: wakeTrigger,
+        });
+        wakeIds.push(wakeId);
+      } else {
+        for (const repeatDay of alarm.repeatDays) {
+          const bedtimeTrigger = this.createWeeklyTrigger(
+            repeatDay,
+            bedtimeHour,
+            bedtimeMinute
+          );
+
+          const bedtimeId = await Notifications.scheduleNotificationAsync({
+            content: {
+              ...bedtimeContent,
+              sound: true,
+              priority: Notifications.AndroidNotificationPriority.MAX,
+              data: bedtimeData,
+            },
+            trigger: bedtimeTrigger,
+          });
+          bedtimeIds.push(bedtimeId);
+
+          const wakeDay = wakeTotalMinutes >= bedtimeTotalMinutes
+            ? repeatDay
+            : this.getNextWeekDay(repeatDay);
+
+          const wakeTrigger = this.createWeeklyTrigger(
+            wakeDay,
+            wakeHour,
+            wakeMinute
+          );
+
+          const wakeId = await Notifications.scheduleNotificationAsync({
+            content: {
+              ...wakeContent,
+              sound: true,
+              priority: Notifications.AndroidNotificationPriority.MAX,
+              data: wakeData,
+            },
+            trigger: wakeTrigger,
+          });
+          wakeIds.push(wakeId);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error scheduling sleep alarm notifications:', error);
+    }
+
+    return { bedtimeIds, wakeIds };
+  }
+
+  async cancelSleepAlarmNotifications(notificationIds: string[]): Promise<void> {
+    const validIds = notificationIds.filter((id): id is string => !!id);
+    if (validIds.length === 0) {
+      return;
+    }
+
+    try {
+      await Promise.all(
+        validIds.map((id) => Notifications.cancelScheduledNotificationAsync(id))
+      );
+    } catch (error) {
+      console.error('❌ Error cancelling sleep alarm notifications:', error);
+    }
+  }
+
+  private getNextDateForTime(time: string, reference: Date = new Date()): Date {
+    const { hours, minutes } = parseTimeString(time);
+    const candidate = new Date(reference);
+    candidate.setHours(hours, minutes, 0, 0);
+
+    if (candidate <= reference) {
+      candidate.setDate(candidate.getDate() + 1);
+    }
+
+    return candidate;
+  }
+
+  private createWeeklyTrigger(day: WeekDay, hour: number, minute: number): Notifications.WeeklyTriggerInput {
+    return {
+      type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
+      channelId: ALARM_CHANNEL_ID,
+      weekday: this.mapWeekDayToCalendar(day),
+      hour,
+      minute,
+    };
+  }
+
+  private mapWeekDayToCalendar(day: WeekDay): number {
+    switch (day) {
+      case WeekDay.SUNDAY:
+        return 1;
+      case WeekDay.MONDAY:
+        return 2;
+      case WeekDay.TUESDAY:
+        return 3;
+      case WeekDay.WEDNESDAY:
+        return 4;
+      case WeekDay.THURSDAY:
+        return 5;
+      case WeekDay.FRIDAY:
+        return 6;
+      case WeekDay.SATURDAY:
+        return 7;
+      default:
+        return 1;
+    }
+  }
+
+  private getNextWeekDay(day: WeekDay): WeekDay {
+    if (day === WeekDay.SATURDAY) {
+      return WeekDay.SUNDAY;
+    }
+
+    return (day + 1) as WeekDay;
+  }
+
+  private calculateNextTriggerDate(alarm: TimeAlarm): Date | null {
     const now = new Date();
     const [hours, minutes] = alarm.time.split(':').map(Number);
     
@@ -187,7 +394,7 @@ export class NotificationManager {
     return triggerDate;
   }
 
-  private getNextRepeatDate(alarm: Alarm, baseDate: Date): Date {
+  private getNextRepeatDate(alarm: TimeAlarm, baseDate: Date): Date {
     const now = new Date();
     
     const repeatDaysAsNumbers = alarm.repeatDays?.map(weekDay => {
@@ -232,7 +439,7 @@ export class NotificationManager {
     }
   }
 
-  async showLocationAlarmNotification(alarm: Alarm, title: string, body: string): Promise<void> {
+  async showLocationAlarmNotification(alarm: LocationAlarm, title: string, body: string): Promise<void> {
     try {
       await this.initialize();
       

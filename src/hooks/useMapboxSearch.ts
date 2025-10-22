@@ -78,7 +78,7 @@ export const useMapboxSearch = (query: string) => {
             } finally {
                 setLoading(false);
             }
-        }, 300),
+        }, 1000),
         []
     );
 

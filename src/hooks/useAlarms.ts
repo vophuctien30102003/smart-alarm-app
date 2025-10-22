@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { isLocationAlarm, isTimeAlarm } from '../shared/types/alarm.type';
+import { isLocationAlarm, isSleepAlarm, isTimeAlarm } from '../shared/types/alarm.type';
 import { useAlarmStore } from '../store/alarmStore';
 
 export const useAlarms = () => {
@@ -46,17 +46,32 @@ export const useAlarms = () => {
   }, [_toggleAlarm]);
 
   const sortedAlarms = useMemo(() => {
+    const getPriority = (alarm: typeof alarms[number]) => {
+      if (isTimeAlarm(alarm)) return 0;
+      if (isSleepAlarm(alarm)) return 1;
+      if (isLocationAlarm(alarm)) return 2;
+      return 3;
+    };
+
     return [...alarms].sort((a, b) => {
-      // Sort time alarms by time, location alarms by label
+      const priorityDiff = getPriority(a) - getPriority(b);
+      if (priorityDiff !== 0) {
+        return priorityDiff;
+      }
+
       if (isTimeAlarm(a) && isTimeAlarm(b)) {
         return a.time.localeCompare(b.time);
-      } else if (isLocationAlarm(a) && isLocationAlarm(b)) {
-        return a.label.localeCompare(b.label);
-      } else if (isTimeAlarm(a) && isLocationAlarm(b)) {
-        return -1; // Time alarms first
-      } else {
-        return 1; // Location alarms second
       }
+
+      if (isSleepAlarm(a) && isSleepAlarm(b)) {
+        return a.bedtime.localeCompare(b.bedtime);
+      }
+
+      if (isLocationAlarm(a) && isLocationAlarm(b)) {
+        return a.label.localeCompare(b.label);
+      }
+
+      return 0;
     });
   }, [alarms]);
 

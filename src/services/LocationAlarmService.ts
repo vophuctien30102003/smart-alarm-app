@@ -167,7 +167,7 @@ class LocationAlarmService {
     
     const body = `Alarm: ${alarm.label}`;
     
-    await notificationManager.showLocationAlarmNotification(alarm as any, title, body);
+  await notificationManager.showLocationAlarmNotification(alarm, title, body);
 
     if (this.onAlarmTrigger) {
       this.onAlarmTrigger(alarm);

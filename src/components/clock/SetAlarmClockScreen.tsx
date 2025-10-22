@@ -1,21 +1,25 @@
+import { DEFAULT_ALARM_SOUNDS } from "@/shared/constants";
 import { WeekDay } from "@/shared/enums";
+import type { SleepAlarmFormData } from "@/shared/types/sleepAlarmForm.type";
+import { formatTime, timeStringToDate } from "@/shared/utils/timeUtils";
 import { LinearGradient } from "expo-linear-gradient";
 import { Back } from "iconsax-react-native";
-import { useState } from "react";
 import { ScrollView, TouchableOpacity, View } from "react-native";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { Text } from "../ui/text";
 import { CustomAlarmClock } from "./CustomAlarmClock";
+import { useSleepAlarmForm } from "./hooks/useSleepAlarmForm";
 
 interface Props {
-    onSave: (alarmData: any) => void;
+    onSave: (alarmData: SleepAlarmFormData) => void;
     onBack: () => void;
+    initialData?: Partial<SleepAlarmFormData>;
 }
 
-export default function SetAlarmScreen({ onSave, onBack }: Props) {
-    const [selectedDays, setSelectedDays] = useState<WeekDay[]>([]);
-    const [bedtime] = useState("22:15");
-    const [wakeTime] = useState("06:15");
-    const [sleepDuration] = useState("08:00");
+export default function SetAlarmScreen({ onSave, onBack, initialData }: Props) {
+    const { state, actions } = useSleepAlarmForm({ initialData });
+
+    const { selectedDays, bedtime, wakeTime, sleepDuration, snoozeMinutes, snoozeEnabled, volume, soundId, gentleWakeMinutes, vibrate, isPickerVisibleFor } = state;
 
     const days = [
         { key: WeekDay.MONDAY, label: "Mo" },
@@ -27,22 +31,25 @@ export default function SetAlarmScreen({ onSave, onBack }: Props) {
         { key: WeekDay.SUNDAY, label: "Su" },
     ];
 
-    const toggleDay = (day: WeekDay) => {
-        setSelectedDays(prev =>
-            prev.includes(day)
-                ? prev.filter(d => d !== day)
-                : [...prev, day]
-        );
-    };
+    const { toggleDay, adjustBedtime, adjustWakeTime } = actions;
 
     const handleSave = () => {
-        const alarmData = {
-            selectedDays,
-            bedtime,
-            wakeTime,
-            sleepDuration,
-        };
+        const alarmData = actions.createFormData();
         onSave(alarmData);
+    };
+
+    const handleTimeConfirm = (date: Date) => {
+        if (isPickerVisibleFor === "bedtime") {
+            actions.setBedtime(formatTime(date));
+        }
+        if (isPickerVisibleFor === "wake") {
+            actions.setWakeTime(formatTime(date));
+        }
+        actions.setPickerVisibleFor(null);
+    };
+
+    const handleTimeCancel = () => {
+        actions.setPickerVisibleFor(null);
     };
 
     return (
@@ -88,9 +95,25 @@ export default function SetAlarmScreen({ onSave, onBack }: Props) {
                                 Bedtime
                             </Text>
                         </View>
-                        <Text className="text-white text-4xl font-light">
-                            {bedtime}
-                        </Text>
+                        <TouchableOpacity onPress={() => actions.setPickerVisibleFor("bedtime") }>
+                            <Text className="text-white text-4xl font-light">
+                                {bedtime}
+                            </Text>
+                        </TouchableOpacity>
+                        <View className="flex-row items-center mt-3">
+                            <TouchableOpacity
+                                onPress={() => adjustBedtime(-15)}
+                                className="px-3 py-1 rounded-full bg-white/10 mr-2"
+                            >
+                                <Text className="text-white text-sm">-15m</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => adjustBedtime(15)}
+                                className="px-3 py-1 rounded-full bg-white/10"
+                            >
+                                <Text className="text-white text-sm">+15m</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
 
                     <View className="flex-1 items-center">
@@ -100,9 +123,25 @@ export default function SetAlarmScreen({ onSave, onBack }: Props) {
                                 Wake up
                             </Text>
                         </View>
-                        <Text className="text-white text-4xl font-light">
-                            {wakeTime}
-                        </Text>
+                        <TouchableOpacity onPress={() => actions.setPickerVisibleFor("wake") }>
+                            <Text className="text-white text-4xl font-light">
+                                {wakeTime}
+                            </Text>
+                        </TouchableOpacity>
+                        <View className="flex-row items-center mt-3">
+                            <TouchableOpacity
+                                onPress={() => adjustWakeTime(-15)}
+                                className="px-3 py-1 rounded-full bg-white/10 mr-2"
+                            >
+                                <Text className="text-white text-sm">-15m</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => adjustWakeTime(15)}
+                                className="px-3 py-1 rounded-full bg-white/10"
+                            >
+                                <Text className="text-white text-sm">+15m</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </View>
 
@@ -139,8 +178,33 @@ export default function SetAlarmScreen({ onSave, onBack }: Props) {
                         </View>
                     </View>
                 </View>
-                <CustomAlarmClock/>
+                <CustomAlarmClock
+                    gentleWakeMinutes={gentleWakeMinutes}
+                    onSelectGentleWake={actions.setGentleWakeMinutes}
+                    gentleWakeOptions={[0,5,10,15]}
+                    snoozeEnabled={snoozeEnabled}
+                    onToggleSnooze={actions.setSnoozeEnabled}
+                    snoozeMinutes={snoozeMinutes}
+                    snoozeOptions={[5,10,15]}
+                    onSelectSnooze={actions.setSnoozeMinutes}
+                    volume={volume}
+                    onChangeVolume={actions.setVolume}
+                    soundId={soundId}
+                    soundOptions={DEFAULT_ALARM_SOUNDS.map(s => ({ id: s.id, title: s.title }))}
+                    onSelectSound={actions.setSoundId}
+                    vibrate={vibrate}
+                    onToggleVibrate={actions.setVibrate}
+                />
             </ScrollView>
+            <DateTimePickerModal
+                isVisible={isPickerVisibleFor !== null}
+                mode="time"
+                is24Hour
+                date={timeStringToDate(isPickerVisibleFor === "wake" ? wakeTime : bedtime)}
+                onConfirm={handleTimeConfirm}
+                onCancel={handleTimeCancel}
+                minuteInterval={1}
+            />
         </LinearGradient>
     );
 }

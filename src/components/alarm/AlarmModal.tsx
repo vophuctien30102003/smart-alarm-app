@@ -40,8 +40,10 @@ export const AlarmModal: React.FC = () => {
     
     if (isTimeAlarm(activeAlarm)) {
       return activeAlarm.time;
-    } else {
+    } else if ('targetLocation' in activeAlarm) {
       return `📍 ${activeAlarm.targetLocation?.name || 'Location Alarm'}`;
+    } else {
+      return 'Alarm';
     }
   }, [activeAlarm]);
 

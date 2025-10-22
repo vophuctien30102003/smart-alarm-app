@@ -1,28 +1,86 @@
 import HeaderTabs from "@/components/clock/HeaderTabClock";
 import ListAlarmClock from "@/components/clock/ListAlarmClock";
 import SetAlarmScreen from "@/components/clock/SetAlarmClockScreen";
+import { useAlarms } from "@/hooks/useAlarms";
+import { AlarmType } from "@/shared/enums";
+import { isSleepAlarm } from "@/shared/types/alarm.type";
+import type { SleepAlarmFormData } from "@/shared/types/sleepAlarmForm.type";
+import { formatRepeatDays } from "@/shared/utils/timeUtils";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { SafeAreaView, Text, TouchableOpacity, View } from "react-native";
 
 export default function AlarmClockPage() {
     const [sleepGoal, setSleepGoal] = useState(8);
     const [activeTab, setActiveTab] = useState<"alarm" | "timer">("alarm");
     const [showSetAlarm, setShowSetAlarm] = useState(false);
+    const [editingAlarmId, setEditingAlarmId] = useState<string | null>(null);
 
-    const handleSaveAlarm = (alarmData: any) => {
-        setShowSetAlarm(false);
+    const { alarms, addAlarm, updateAlarm } = useAlarms();
+
+    const sleepAlarms = useMemo(() => alarms.filter(isSleepAlarm), [alarms]);
+
+    const handleSaveAlarm = async (alarmData: SleepAlarmFormData) => {
+        const editingAlarm = editingAlarmId ? sleepAlarms.find((alarm) => alarm.id === editingAlarmId) : undefined;
+        const fallbackLabel = alarmData.selectedDays.length > 0
+            ? formatRepeatDays(alarmData.selectedDays)
+            : "Sleep schedule";
+        const labelToUse = (alarmData.label && alarmData.label.trim().length > 0)
+            ? alarmData.label
+            : editingAlarm?.label ?? fallbackLabel;
+
+        try {
+            if (editingAlarmId) {
+                await updateAlarm(editingAlarmId, {
+                    type: AlarmType.SLEEP,
+                    label: labelToUse,
+                    bedtime: alarmData.bedtime,
+                    wakeUpTime: alarmData.wakeTime,
+                    repeatDays: alarmData.selectedDays,
+                    goalMinutes: alarmData.goalMinutes,
+                    isEnabled: true,
+                } as any);
+            } else {
+                await addAlarm({
+                    type: AlarmType.SLEEP,
+                    label: labelToUse,
+                    bedtime: alarmData.bedtime,
+                    wakeUpTime: alarmData.wakeTime,
+                    repeatDays: alarmData.selectedDays,
+                    goalMinutes: alarmData.goalMinutes,
+                    isEnabled: true,
+                    vibrate: true,
+                    snoozeEnabled: false,
+                    snoozeDuration: 5,
+                    maxSnoozeCount: 0,
+                } as any);
+            }
+        } catch (error) {
+            console.error("Failed to save sleep alarm", error);
+        } finally {
+            setEditingAlarmId(null);
+            setShowSetAlarm(false);
+        }
     };
 
     const handleBackFromSetAlarm = () => {
         setShowSetAlarm(false);
+        setEditingAlarmId(null);
     };
 
     if (showSetAlarm) {
+        const editingAlarm = sleepAlarms.find((alarm) => alarm.id === editingAlarmId);
         return (
             <SafeAreaView className="flex-1">
                 <SetAlarmScreen 
+                    initialData={editingAlarm ? {
+                        bedtime: editingAlarm.bedtime,
+                        wakeTime: editingAlarm.wakeUpTime,
+                        selectedDays: editingAlarm.repeatDays,
+                        goalMinutes: editingAlarm.goalMinutes ?? 0,
+                        label: editingAlarm.label,
+                    } : undefined}
                     onSave={handleSaveAlarm}
                     onBack={handleBackFromSetAlarm}
                 />
@@ -85,9 +143,14 @@ export default function AlarmClockPage() {
                             Your Sleep Schedule
                         </Text>
                         <ListAlarmClock
-                            alarms={[]}
+                            alarms={sleepAlarms}
                             onAddNewAlarm={() => setShowSetAlarm(true)}
-                            onEditAlarm={() => {}}
+                            onEditAlarm={(alarm) => {
+                                if (isSleepAlarm(alarm)) {
+                                    setEditingAlarmId(alarm.id);
+                                    setShowSetAlarm(true);
+                                }
+                            }}
                         />
                     </View>
                 ) : (

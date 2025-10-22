@@ -9,19 +9,102 @@ import {
   Alarm,
   AlarmStore,
   isLocationAlarm,
+  isSleepAlarm,
   isTimeAlarm,
   LocationAlarm,
   LocationTarget,
+  SleepAlarm,
   TimeAlarm,
 } from '../shared/types/alarm.type';
 import type { LocationAlarmStatus } from '../shared/types/locationTracking.type';
 import { generateTimestampId } from '../shared/utils/idUtils';
+import { mapWeekDayToNumber, parseTimeString } from '../shared/utils/timeUtils';
 
 const locationService = LocationAlarmService.getInstance();
 
 const MAX_SNOOZE_COUNT = 3;
 const DEFAULT_SNOOZE_DURATION = 5;
 const DEFAULT_VOLUME = 0.8;
+
+const getNextWeekDayValue = (day: WeekDay): WeekDay => {
+  return day === WeekDay.SATURDAY ? WeekDay.SUNDAY : ((day + 1) as WeekDay);
+};
+
+const getNextDateForTime = (time: string, reference: Date = new Date()): Date => {
+  const { hours, minutes } = parseTimeString(time);
+  const candidate = new Date(reference);
+  candidate.setHours(hours, minutes, 0, 0);
+
+  if (candidate <= reference) {
+    candidate.setDate(candidate.getDate() + 1);
+  }
+
+  return candidate;
+};
+
+const getNextRepeatDateForTime = (
+  time: string,
+  repeatDays: WeekDay[],
+  shiftToNextDay: boolean = false
+): Date | null => {
+  if (repeatDays.length === 0) {
+    return null;
+  }
+
+  const now = new Date();
+  const { hours, minutes } = parseTimeString(time);
+  let best: Date | null = null;
+
+  repeatDays.forEach((day) => {
+    const dayForEvent = shiftToNextDay ? getNextWeekDayValue(day) : day;
+    let diff = mapWeekDayToNumber(dayForEvent) - now.getDay();
+    if (diff < 0) {
+      diff += 7;
+    }
+
+    const candidate = new Date(now);
+    candidate.setDate(candidate.getDate() + diff);
+    candidate.setHours(hours, minutes, 0, 0);
+
+    if (candidate <= now) {
+      candidate.setDate(candidate.getDate() + 7);
+    }
+
+    if (!best || candidate < best) {
+      best = candidate;
+    }
+  });
+
+  return best;
+};
+
+const getNextSleepEventDate = (alarm: SleepAlarm, event: 'bedtime' | 'wake'): Date | null => {
+  if (!alarm.isEnabled) {
+    return null;
+  }
+
+  const repeatDays = alarm.repeatDays ?? [];
+  const { hours: bedHour, minutes: bedMinute } = parseTimeString(alarm.bedtime);
+  const { hours: wakeHour, minutes: wakeMinute } = parseTimeString(alarm.wakeUpTime);
+  const bedtimeMinutes = bedHour * 60 + bedMinute;
+  const wakeMinutes = wakeHour * 60 + wakeMinute;
+
+  if (repeatDays.length === 0) {
+    if (event === 'bedtime') {
+      return getNextDateForTime(alarm.bedtime);
+    }
+
+    const bedtimeDate = getNextDateForTime(alarm.bedtime);
+    return getNextDateForTime(alarm.wakeUpTime, bedtimeDate);
+  }
+
+  const shiftToNextDay = wakeMinutes < bedtimeMinutes;
+  if (event === 'bedtime') {
+    return getNextRepeatDateForTime(alarm.bedtime, repeatDays, false);
+  }
+
+  return getNextRepeatDateForTime(alarm.wakeUpTime, repeatDays, shiftToNextDay) ?? null;
+};
 
 export const useAlarmStore = create<AlarmStore>()(
   persist(
@@ -43,6 +126,11 @@ export const useAlarmStore = create<AlarmStore>()(
             volume: alarm.volume || DEFAULT_VOLUME,
             snoozeDuration: alarm.snoozeDuration || DEFAULT_SNOOZE_DURATION,
           } as Alarm;
+
+          if (isSleepAlarm(newAlarm)) {
+            newAlarm.bedtimeNotificationIds = [];
+            newAlarm.wakeNotificationIds = [];
+          }
 
           set((state) => ({
             alarms: [...state.alarms, newAlarm],
@@ -70,22 +158,39 @@ export const useAlarmStore = create<AlarmStore>()(
             console.error('Failed to start location tracking:', error);
             Alert.alert('Location Error', 'Failed to start location tracking for alarm');
           }
-        } else {
-          if (!isTimeAlarm(alarm)) {
-            console.warn('Attempted to schedule notification for non-time alarm');
-            return;
-          }
+          return;
+        }
 
-          const notificationId = await notificationManager.scheduleAlarmNotification(alarm);
-          if (notificationId) {
-            set((state) => ({
-              alarms: state.alarms.map(a => 
-                a.id === alarm.id 
-                  ? { ...a, notificationId } 
-                  : a
-              ),
-            }));
-          }
+        if (isSleepAlarm(alarm)) {
+          const { bedtimeIds, wakeIds } = await notificationManager.scheduleSleepAlarmNotifications(alarm);
+          set((state) => ({
+            alarms: state.alarms.map((a) =>
+              a.id === alarm.id
+                ? {
+                    ...a,
+                    bedtimeNotificationIds: bedtimeIds,
+                    wakeNotificationIds: wakeIds,
+                  }
+                : a
+            ),
+          }));
+          return;
+        }
+
+        if (!isTimeAlarm(alarm)) {
+          console.warn('Attempted to schedule notification for unsupported alarm type');
+          return;
+        }
+
+        const notificationId = await notificationManager.scheduleAlarmNotification(alarm);
+        if (notificationId) {
+          set((state) => ({
+            alarms: state.alarms.map(a => 
+              a.id === alarm.id 
+                ? { ...a, notificationId } 
+                : a
+            ),
+          }));
         }
       },
 
@@ -101,6 +206,11 @@ export const useAlarmStore = create<AlarmStore>()(
             ...updates,
             updatedAt: new Date().toISOString(),
           } as Alarm;
+
+          if (isSleepAlarm(updatedAlarm)) {
+            updatedAlarm.bedtimeNotificationIds = [];
+            updatedAlarm.wakeNotificationIds = [];
+          }
 
           set((state) => ({
             alarms: state.alarms.map((a) =>
@@ -118,6 +228,16 @@ export const useAlarmStore = create<AlarmStore>()(
       },
 
       cleanupAlarmTracking: async (alarm: Alarm) => {
+        if (isSleepAlarm(alarm)) {
+          const ids = [
+            ...(alarm.bedtimeNotificationIds ?? []),
+            ...(alarm.wakeNotificationIds ?? []),
+          ];
+          if (ids.length > 0) {
+            await notificationManager.cancelSleepAlarmNotifications(ids);
+          }
+        }
+
         if (alarm.notificationId) {
           await notificationManager.cancelAlarmNotification(alarm.notificationId);
         }
@@ -208,18 +328,86 @@ export const useAlarmStore = create<AlarmStore>()(
           // Location-based alarms don't use time-based notifications
           return;
         }
-        await notificationManager.scheduleAlarmNotification(alarm);
+        if (isSleepAlarm(alarm)) {
+          const { bedtimeIds, wakeIds } = await notificationManager.scheduleSleepAlarmNotifications(alarm);
+          set((state) => ({
+            alarms: state.alarms.map((a) =>
+              a.id === alarm.id
+                ? {
+                    ...a,
+                    bedtimeNotificationIds: bedtimeIds,
+                    wakeNotificationIds: wakeIds,
+                  }
+                : a
+            ),
+          }));
+          return;
+        }
+
+        if (!isTimeAlarm(alarm)) {
+          return;
+        }
+
+        const notificationId = await notificationManager.scheduleAlarmNotification(alarm);
+        if (notificationId) {
+          set((state) => ({
+            alarms: state.alarms.map((a) =>
+              a.id === alarm.id
+                ? { ...a, notificationId }
+                : a
+            ),
+          }));
+        }
       },
 
       cancelNotifications: async (alarmId: string) => {
         const alarm = get().alarms.find(a => a.id === alarmId);
-        if (alarm?.notificationId) {
+        if (!alarm) {
+          return;
+        }
+
+        if (isSleepAlarm(alarm)) {
+          const ids = [
+            ...(alarm.bedtimeNotificationIds ?? []),
+            ...(alarm.wakeNotificationIds ?? []),
+          ];
+          await notificationManager.cancelSleepAlarmNotifications(ids);
+          set((state) => ({
+            alarms: state.alarms.map((a) =>
+              a.id === alarmId
+                ? {
+                    ...a,
+                    bedtimeNotificationIds: [],
+                    wakeNotificationIds: [],
+                  }
+                : a
+            ),
+          }));
+          return;
+        }
+
+        if (alarm.notificationId) {
           await notificationManager.cancelAlarmNotification(alarm.notificationId);
         }
       },
 
       getNextAlarmTime: (alarm: Alarm): Date | null => {
-        if (isLocationAlarm(alarm) || !alarm.isEnabled) {
+        if (!alarm.isEnabled || isLocationAlarm(alarm)) {
+          return null;
+        }
+
+        if (isSleepAlarm(alarm)) {
+          const nextBedtime = getNextSleepEventDate(alarm, 'bedtime');
+          const nextWake = getNextSleepEventDate(alarm, 'wake');
+
+          if (nextBedtime && nextWake) {
+            return nextBedtime < nextWake ? nextBedtime : nextWake;
+          }
+
+          return nextBedtime ?? nextWake ?? null;
+        }
+
+        if (!isTimeAlarm(alarm)) {
           return null;
         }
 

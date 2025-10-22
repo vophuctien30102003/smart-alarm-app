@@ -48,8 +48,20 @@ export interface LocationAlarm extends BaseAlarm {
   repeatType: AlarmRepeatType;
 }
 
+// Sleep alarm combines bedtime and wake-up notifications
+export interface SleepAlarm extends BaseAlarm {
+  type: AlarmType.SLEEP;
+  bedtime: string; // HH:mm format
+  wakeUpTime: string; // HH:mm format
+  repeatDays: WeekDay[];
+  goalMinutes?: number;
+  bedtimeNotificationIds?: string[];
+  wakeNotificationIds?: string[];
+  gentleWakeMinutes?: number; // minutes to ramp volume
+}
+
 // Union type for all alarms
-export type Alarm = TimeAlarm | LocationAlarm;
+export type Alarm = TimeAlarm | LocationAlarm | SleepAlarm;
 
 // Alarm notification
 export interface AlarmNotification {
@@ -100,6 +112,10 @@ export const isTimeAlarm = (alarm: Alarm): alarm is TimeAlarm => {
 
 export const isLocationAlarm = (alarm: Alarm): alarm is LocationAlarm => {
   return alarm.type === AlarmType.LOCATION;
+};
+
+export const isSleepAlarm = (alarm: Alarm): alarm is SleepAlarm => {
+  return alarm.type === AlarmType.SLEEP;
 };
 
 // Legacy types for backward compatibility (will be removed after migration)

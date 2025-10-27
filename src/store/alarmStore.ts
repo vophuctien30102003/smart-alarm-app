@@ -1,114 +1,48 @@
-import { WeekDay } from '@/shared/enums';
+import { AlarmRepeatType, AlarmType } from '@/shared/enums';
+import { createLocationTracker } from '@/store/modules/locationTracker';
+import { cancelSleepNotifications, getNextSleepEventDate, scheduleSleepNotifications } from '@/store/modules/sleepScheduler';
+import { clearSnoozeTimeout, scheduleSnoozeTimeout } from '@/store/modules/snoozeManager';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Alert } from 'react-native';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import LocationAlarmService from '../services/LocationAlarmService';
 import notificationManager from '../services/NotificationManager';
 import {
-  Alarm,
-  AlarmStore,
-  isLocationAlarm,
-  isSleepAlarm,
-  isTimeAlarm,
-  LocationAlarm,
-  LocationTarget,
-  SleepAlarm,
-  TimeAlarm,
+    Alarm,
+    AlarmStore,
+    isLocationAlarm,
+    isSleepAlarm,
+    isTimeAlarm,
+    LocationAlarm,
+    LocationTarget,
+    SleepAlarm,
 } from '../shared/types/alarm.type';
 import type { LocationAlarmStatus } from '../shared/types/locationTracking.type';
 import { generateTimestampId } from '../shared/utils/idUtils';
-import { mapWeekDayToNumber, parseTimeString } from '../shared/utils/timeUtils';
 
-const locationService = LocationAlarmService.getInstance();
+import { mapWeekDayToNumber } from '../shared/utils/timeUtils';
+
+const locationTracker = createLocationTracker();
 
 const MAX_SNOOZE_COUNT = 3;
 const DEFAULT_SNOOZE_DURATION = 5;
 const DEFAULT_VOLUME = 0.8;
 
-const getNextWeekDayValue = (day: WeekDay): WeekDay => {
-  return day === WeekDay.SATURDAY ? WeekDay.SUNDAY : ((day + 1) as WeekDay);
-};
-
-const getNextDateForTime = (time: string, reference: Date = new Date()): Date => {
-  const { hours, minutes } = parseTimeString(time);
-  const candidate = new Date(reference);
-  candidate.setHours(hours, minutes, 0, 0);
-
-  if (candidate <= reference) {
-    candidate.setDate(candidate.getDate() + 1);
-  }
-
-  return candidate;
-};
-
-const getNextRepeatDateForTime = (
-  time: string,
-  repeatDays: WeekDay[],
-  shiftToNextDay: boolean = false
-): Date | null => {
-  if (repeatDays.length === 0) {
-    return null;
-  }
-
-  const now = new Date();
-  const { hours, minutes } = parseTimeString(time);
-  let best: Date | null = null;
-
-  repeatDays.forEach((day) => {
-    const dayForEvent = shiftToNextDay ? getNextWeekDayValue(day) : day;
-    let diff = mapWeekDayToNumber(dayForEvent) - now.getDay();
-    if (diff < 0) {
-      diff += 7;
-    }
-
-    const candidate = new Date(now);
-    candidate.setDate(candidate.getDate() + diff);
-    candidate.setHours(hours, minutes, 0, 0);
-
-    if (candidate <= now) {
-      candidate.setDate(candidate.getDate() + 7);
-    }
-
-    if (!best || candidate < best) {
-      best = candidate;
-    }
-  });
-
-  return best;
-};
-
-const getNextSleepEventDate = (alarm: SleepAlarm, event: 'bedtime' | 'wake'): Date | null => {
-  if (!alarm.isEnabled) {
-    return null;
-  }
-
-  const repeatDays = alarm.repeatDays ?? [];
-  const { hours: bedHour, minutes: bedMinute } = parseTimeString(alarm.bedtime);
-  const { hours: wakeHour, minutes: wakeMinute } = parseTimeString(alarm.wakeUpTime);
-  const bedtimeMinutes = bedHour * 60 + bedMinute;
-  const wakeMinutes = wakeHour * 60 + wakeMinute;
-
-  if (repeatDays.length === 0) {
-    if (event === 'bedtime') {
-      return getNextDateForTime(alarm.bedtime);
-    }
-
-    const bedtimeDate = getNextDateForTime(alarm.bedtime);
-    return getNextDateForTime(alarm.wakeUpTime, bedtimeDate);
-  }
-
-  const shiftToNextDay = wakeMinutes < bedtimeMinutes;
-  if (event === 'bedtime') {
-    return getNextRepeatDateForTime(alarm.bedtime, repeatDays, false);
-  }
-
-  return getNextRepeatDateForTime(alarm.wakeUpTime, repeatDays, shiftToNextDay) ?? null;
-};
-
 export const useAlarmStore = create<AlarmStore>()(
   persist(
-    (set, get) => ({
+    (set, get) => {
+      const updateAlarmInState = (id: string, transformer: (alarm: Alarm) => Alarm) => {
+        set((state) => ({
+          alarms: state.alarms.map((alarm) => (alarm.id === id ? transformer(alarm) : alarm)),
+        }));
+      };
+
+      const mergeAlarmInState = (id: string, partial: Partial<Alarm>) => {
+        updateAlarmInState(id, (alarm) => ({ ...alarm, ...partial } as Alarm));
+      };
+
+      const getLocationAlarmsFromState = () => get().alarms.filter(isLocationAlarm) as LocationAlarm[];
+
+      return {
       alarms: [],
       activeAlarm: null,
       isPlaying: false,
@@ -147,33 +81,16 @@ export const useAlarmStore = create<AlarmStore>()(
 
       setupAlarmTracking: async (alarm: Alarm) => {
         if (isLocationAlarm(alarm)) {
-          locationService.addLocationAlarm(alarm);
-          
-          try {
-            await locationService.startLocationTracking();
-            locationService.setAlarmTriggerCallback((triggeredAlarm) => {
-              get().triggerAlarm(triggeredAlarm);
-            });
-          } catch (error) {
-            console.error('Failed to start location tracking:', error);
-            Alert.alert('Location Error', 'Failed to start location tracking for alarm');
-          }
+          await get().updateLocationAlarms();
           return;
         }
 
         if (isSleepAlarm(alarm)) {
-          const { bedtimeIds, wakeIds } = await notificationManager.scheduleSleepAlarmNotifications(alarm);
-          set((state) => ({
-            alarms: state.alarms.map((a) =>
-              a.id === alarm.id
-                ? {
-                    ...a,
-                    bedtimeNotificationIds: bedtimeIds,
-                    wakeNotificationIds: wakeIds,
-                  }
-                : a
-            ),
-          }));
+          const { bedtimeIds, wakeIds } = await scheduleSleepNotifications(alarm);
+          mergeAlarmInState(alarm.id, {
+            bedtimeNotificationIds: bedtimeIds,
+            wakeNotificationIds: wakeIds,
+          });
           return;
         }
 
@@ -212,11 +129,7 @@ export const useAlarmStore = create<AlarmStore>()(
             updatedAlarm.wakeNotificationIds = [];
           }
 
-          set((state) => ({
-            alarms: state.alarms.map((a) =>
-              a.id === id ? updatedAlarm : a
-            ),
-          }));
+          updateAlarmInState(id, () => updatedAlarm);
 
           if (updatedAlarm.isEnabled) {
             await get().setupAlarmTracking(updatedAlarm);
@@ -229,20 +142,15 @@ export const useAlarmStore = create<AlarmStore>()(
 
       cleanupAlarmTracking: async (alarm: Alarm) => {
         if (isSleepAlarm(alarm)) {
-          const ids = [
-            ...(alarm.bedtimeNotificationIds ?? []),
-            ...(alarm.wakeNotificationIds ?? []),
-          ];
-          if (ids.length > 0) {
-            await notificationManager.cancelSleepAlarmNotifications(ids);
-          }
+          await cancelSleepNotifications(alarm);
         }
 
         if (alarm.notificationId) {
           await notificationManager.cancelAlarmNotification(alarm.notificationId);
         }
         if (isLocationAlarm(alarm)) {
-            await locationService.removeLocationAlarm(alarm.id);
+          await locationTracker.removeLocationAlarm(alarm.id);
+          return;
         }
       },
 
@@ -270,10 +178,7 @@ export const useAlarmStore = create<AlarmStore>()(
       },
 
       triggerAlarm: (alarm: Alarm) => {
-        if ((globalThis as any).snoozeTimeout) {
-          clearTimeout((globalThis as any).snoozeTimeout);
-          delete (globalThis as any).snoozeTimeout;
-        }
+        clearSnoozeTimeout();
 
         set({
           activeAlarm: alarm,
@@ -299,21 +204,20 @@ export const useAlarmStore = create<AlarmStore>()(
           snoozeCount: snoozeCount + 1,
         });
 
-        const snoozeTimeout = setTimeout(() => {
-          const currentState = get();
-          if (currentState.isSnoozed && currentState.activeAlarm?.id === activeAlarm.id) {
-            get().triggerAlarm(activeAlarm);
+        scheduleSnoozeTimeout(
+          activeAlarm,
+          activeAlarm.snoozeDuration || DEFAULT_SNOOZE_DURATION,
+          (alarmToTrigger) => {
+            const currentState = get();
+            if (currentState.isSnoozed && currentState.activeAlarm?.id === alarmToTrigger.id) {
+              get().triggerAlarm(alarmToTrigger);
+            }
           }
-        }, (activeAlarm.snoozeDuration || DEFAULT_SNOOZE_DURATION) * 60 * 1000);
-
-        (globalThis as any).snoozeTimeout = snoozeTimeout;
+        );
       },
 
       stopAlarm: () => {
-        if ((globalThis as any).snoozeTimeout) {
-          clearTimeout((globalThis as any).snoozeTimeout);
-          delete (globalThis as any).snoozeTimeout;
-        }
+        clearSnoozeTimeout();
 
         set({
           activeAlarm: null,
@@ -329,18 +233,11 @@ export const useAlarmStore = create<AlarmStore>()(
           return;
         }
         if (isSleepAlarm(alarm)) {
-          const { bedtimeIds, wakeIds } = await notificationManager.scheduleSleepAlarmNotifications(alarm);
-          set((state) => ({
-            alarms: state.alarms.map((a) =>
-              a.id === alarm.id
-                ? {
-                    ...a,
-                    bedtimeNotificationIds: bedtimeIds,
-                    wakeNotificationIds: wakeIds,
-                  }
-                : a
-            ),
-          }));
+          const { bedtimeIds, wakeIds } = await scheduleSleepNotifications(alarm);
+          mergeAlarmInState(alarm.id, {
+            bedtimeNotificationIds: bedtimeIds,
+            wakeNotificationIds: wakeIds,
+          });
           return;
         }
 
@@ -350,13 +247,7 @@ export const useAlarmStore = create<AlarmStore>()(
 
         const notificationId = await notificationManager.scheduleAlarmNotification(alarm);
         if (notificationId) {
-          set((state) => ({
-            alarms: state.alarms.map((a) =>
-              a.id === alarm.id
-                ? { ...a, notificationId }
-                : a
-            ),
-          }));
+          mergeAlarmInState(alarm.id, { notificationId });
         }
       },
 
@@ -367,22 +258,11 @@ export const useAlarmStore = create<AlarmStore>()(
         }
 
         if (isSleepAlarm(alarm)) {
-          const ids = [
-            ...(alarm.bedtimeNotificationIds ?? []),
-            ...(alarm.wakeNotificationIds ?? []),
-          ];
-          await notificationManager.cancelSleepAlarmNotifications(ids);
-          set((state) => ({
-            alarms: state.alarms.map((a) =>
-              a.id === alarmId
-                ? {
-                    ...a,
-                    bedtimeNotificationIds: [],
-                    wakeNotificationIds: [],
-                  }
-                : a
-            ),
-          }));
+          await cancelSleepNotifications(alarm);
+          mergeAlarmInState(alarmId, {
+            bedtimeNotificationIds: [],
+            wakeNotificationIds: [],
+          });
           return;
         }
 
@@ -411,8 +291,7 @@ export const useAlarmStore = create<AlarmStore>()(
           return null;
         }
 
-        const timeAlarm = alarm as TimeAlarm;
-        const [hours, minutes] = timeAlarm.time.split(':').map(Number);
+  const [hours, minutes] = alarm.time.split(':').map(Number);
         const now = new Date();
         const alarmDate = new Date(now);
         alarmDate.setHours(hours, minutes, 0, 0);
@@ -421,12 +300,11 @@ export const useAlarmStore = create<AlarmStore>()(
           alarmDate.setDate(alarmDate.getDate() + 1);
         }
 
-        if (timeAlarm.repeatDays.length > 0) {
+        if (alarm.repeatDays.length > 0) {
           const currentDay = alarmDate.getDay();
-          const daysUntilNext = timeAlarm.repeatDays
+          const daysUntilNext = alarm.repeatDays
             .map(day => {
-              const dayNum = day === WeekDay.SUNDAY ? 0 : day;
-              let diff = dayNum - currentDay;
+              let diff = mapWeekDayToNumber(day) - currentDay;
               if (diff <= 0) diff += 7;
               return diff;
             })
@@ -444,13 +322,7 @@ export const useAlarmStore = create<AlarmStore>()(
 
       startLocationTracking: async () => {
         try {
-          await locationService.startLocationTracking();
-          const alarms = get().alarms.filter(a => a.isEnabled && isLocationAlarm(a)) as LocationAlarm[];
-          locationService.updateLocationAlarms(alarms);
-          
-          locationService.setAlarmTriggerCallback((alarm) => {
-            get().triggerAlarm(alarm);
-          });
+          await locationTracker.startTracking(getLocationAlarmsFromState());
         } catch (error) {
           console.error('Failed to start location tracking:', error);
           throw error;
@@ -458,34 +330,21 @@ export const useAlarmStore = create<AlarmStore>()(
       },
 
       stopLocationTracking: async () => {
-        await locationService.stopLocationTracking();
+        await locationTracker.stopTracking();
       },
 
-      updateLocationAlarms: () => {
-        const alarms = get().alarms.filter(a => a.isEnabled && isLocationAlarm(a)) as LocationAlarm[];
-        locationService.updateLocationAlarms(alarms);
+      updateLocationAlarms: async () => {
+        await locationTracker.syncLocationAlarms(getLocationAlarmsFromState());
       },
 
       getArrivalTimeEstimate: async (targetLocation: LocationTarget, currentPosition?: { latitude: number; longitude: number }) => {
-        try {
-          if (!currentPosition) {
-            const currentLocation = await locationService.getCurrentLocation();
-            if (!currentLocation) return null;
-            currentPosition = {
-              latitude: currentLocation.coords.latitude,
-              longitude: currentLocation.coords.longitude
-            };
-          }
-
-        } catch (error) {
-          console.error('Failed to get arrival estimate:', error);
-          return null;
-        }
+        return locationTracker.estimateArrivalTime(targetLocation, currentPosition);
       },
       getLocationAlarmStatus: (alarmId: string) => {
-        return locationService.getLocationAlarmStatus(alarmId) as LocationAlarmStatus | null;
+        return locationTracker.getLocationAlarmStatus(alarmId) as LocationAlarmStatus | null;
       },
-    }),
+      };
+    },
     {
       name: 'alarm-storage',
       storage: createJSONStorage(() => AsyncStorage),
@@ -496,6 +355,56 @@ export const useAlarmStore = create<AlarmStore>()(
   )
 );
 
-locationService.setAlarmTriggerCallback((alarm) => {
-  useAlarmStore.getState().triggerAlarm(alarm);
+locationTracker.registerCallbacks({
+  onTrigger: (alarm) => {
+    useAlarmStore.getState().triggerAlarm(alarm);
+  },
+  onComplete: (alarm) => {
+    if (alarm.repeatType === AlarmRepeatType.ONCE) {
+      void useAlarmStore.getState().updateAlarm(alarm.id, { isEnabled: false });
+    }
+  },
 });
+
+// Selectors (exported helpers) to reduce recomputation in components/hooks
+export const selectAlarms = (state: AlarmStore) => state.alarms;
+
+export const selectSortedAlarms = (state: AlarmStore) => {
+  const alarms = state.alarms;
+
+  const isTimeAlarm = (alarm: Alarm) => alarm.type === AlarmType.TIME;
+  const isSleepAlarm = (alarm: Alarm) => alarm.type === AlarmType.SLEEP;
+  const isLocationAlarm = (alarm: Alarm) => alarm.type === AlarmType.LOCATION;
+
+  const getPriority = (alarm: Alarm) => {
+    if (isTimeAlarm(alarm)) return 0;
+    if (isSleepAlarm(alarm)) return 1;
+    if (isLocationAlarm(alarm)) return 2;
+    return 3;
+  };
+
+  return [...alarms].sort((a, b) => {
+    const priorityDiff = getPriority(a) - getPriority(b);
+    if (priorityDiff !== 0) {
+      return priorityDiff;
+    }
+
+    if (isTimeAlarm(a) && isTimeAlarm(b)) {
+      return (a as any).time.localeCompare((b as any).time);
+    }
+
+    if (isSleepAlarm(a) && isSleepAlarm(b)) {
+      return (a as any).bedtime.localeCompare((b as any).bedtime);
+    }
+
+    if (isLocationAlarm(a) && isLocationAlarm(b)) {
+      return (a as any).label.localeCompare((b as any).label);
+    }
+
+    return 0;
+  });
+};
+
+export const selectSleepAlarms = (state: AlarmStore) => state.alarms.filter(a => a.type === AlarmType.SLEEP) as SleepAlarm[];
+
+export const selectActiveAlarms = (state: AlarmStore) => state.alarms.filter(a => a.isEnabled);

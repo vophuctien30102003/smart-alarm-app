@@ -1,9 +1,9 @@
-import Slider from "@react-native-community/slider";
-import { ArrowDown2 } from "iconsax-react-native";
-import { useMemo, useState } from "react";
-import { TouchableOpacity, View } from "react-native";
-import { Switch } from "../ui";
-import { Text } from "../ui/text";
+import { Switch } from '@/components/ui';
+import { Text } from '@/components/ui/text';
+import Slider from '@react-native-community/slider';
+import { ArrowDown2 } from 'iconsax-react-native';
+import { useMemo, useState } from 'react';
+import { TouchableOpacity, View } from 'react-native';
 
 interface SoundOption {
     id: string;
@@ -30,7 +30,7 @@ interface Props {
 
 const formatMinutesLabel = (minutes: number): string => {
     if (minutes === 0) {
-        return "Off";
+        return 'Off';
     }
     return `${minutes} min`;
 };
@@ -55,7 +55,7 @@ export function CustomAlarmClock({
     const [showDetails, setShowDetails] = useState(true);
 
     const currentSoundLabel = useMemo(() => {
-        return soundOptions.find(option => option.id === soundId)?.title ?? "Default";
+        return soundOptions.find(option => option.id === soundId)?.title ?? 'Default';
     }, [soundId, soundOptions]);
 
     return (
@@ -73,7 +73,7 @@ export function CustomAlarmClock({
                     <ArrowDown2
                         size="24"
                         color="#d9e3f0"
-                        style={{ transform: [{ rotate: showDetails ? "180deg" : "0deg" }] }}
+                        style={{ transform: [{ rotate: showDetails ? '180deg' : '0deg' }] }}
                     />
                 </TouchableOpacity>
             </View>
@@ -95,7 +95,7 @@ export function CustomAlarmClock({
                     <SettingRow
                         title="Snooze"
                         icon="⏰"
-                        valueLabel={snoozeEnabled ? formatMinutesLabel(snoozeMinutes) : "Off"}
+                        valueLabel={snoozeEnabled ? formatMinutesLabel(snoozeMinutes) : 'Off'}
                     >
                         <View className="flex-row items-center justify-between">
                             <Switch
@@ -141,14 +141,14 @@ export function CustomAlarmClock({
                             options={soundOptions.map(option => option.id)}
                             selectedValue={soundId}
                             onSelect={onSelectSound}
-                            renderLabel={(value) => soundOptions.find(option => option.id === value)?.title ?? value}
+                            renderLabel={value => soundOptions.find(option => option.id === value)?.title ?? value}
                         />
                     </SettingRow>
 
                     <SettingRow
                         title="Vibration"
                         icon="📳"
-                        valueLabel={vibrate ? "On" : "Off"}
+                        valueLabel={vibrate ? 'On' : 'Off'}
                     >
                         <Switch
                             value={vibrate}
@@ -212,8 +212,8 @@ function OptionChips<T extends string | number>({
                     <TouchableOpacity
                         key={String(option)}
                         className={`px-3 py-1 rounded-full border ${
-                            isSelected ? "bg-[#8179FF] border-transparent" : "bg-white/10 border-white/20"
-                        } ${disabled ? "opacity-40" : ""}`}
+                            isSelected ? 'bg-[#8179FF] border-transparent' : 'bg-white/10 border-white/20'
+                        } ${disabled ? 'opacity-40' : ''}`}
                         disabled={disabled}
                         onPress={() => onSelect(option)}
                     >

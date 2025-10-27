@@ -1,9 +1,9 @@
 import { useCallback, useMemo } from 'react';
 import { isLocationAlarm, isSleepAlarm, isTimeAlarm } from '../shared/types/alarm.type';
-import { useAlarmStore } from '../store/alarmStore';
+import { selectAlarms, useAlarmStore } from '../store/alarmStore';
 
 export const useAlarms = () => {
-  const alarms = useAlarmStore(state => state.alarms);
+  const alarms = useAlarmStore(selectAlarms);
   const _addAlarm = useAlarmStore(state => state.addAlarm);
   const _updateAlarm = useAlarmStore(state => state.updateAlarm);
   const _deleteAlarm = useAlarmStore(state => state.deleteAlarm);

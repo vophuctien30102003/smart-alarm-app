@@ -1,3 +1,4 @@
+import { AlarmRepeatType } from '@/shared/enums';
 import { LocationAlarm } from '@/shared/types/alarm.type';
 import type { LocationAlarmStatus } from '@/shared/types/locationTracking.type';
 import { calculateDistance } from '@/shared/utils';
@@ -13,6 +14,8 @@ class LocationAlarmService {
   private locationSubscription: Location.LocationSubscription | null = null;
   private isTracking = false;
   private onAlarmTrigger: ((alarm: LocationAlarm) => void) | null = null;
+  private onAlarmComplete: ((alarm: LocationAlarm) => void) | null = null;
+  private triggeredAlarms: Set<string> = new Set();
 
   static getInstance(): LocationAlarmService {
     if (!LocationAlarmService.instance) {
@@ -21,8 +24,16 @@ class LocationAlarmService {
     return LocationAlarmService.instance;
   }
 
+  registerCallbacks(callbacks: {
+    onTrigger?: (alarm: LocationAlarm) => void;
+    onComplete?: (alarm: LocationAlarm) => void;
+  }) {
+    this.onAlarmTrigger = callbacks.onTrigger ?? null;
+    this.onAlarmComplete = callbacks.onComplete ?? null;
+  }
+
   setAlarmTriggerCallback(callback: (alarm: LocationAlarm) => void) {
-    this.onAlarmTrigger = callback;
+    this.registerCallbacks({ onTrigger: callback });
   }
 
   async startLocationTracking(): Promise<void> {
@@ -77,6 +88,8 @@ class LocationAlarmService {
       return;
     }
 
+    this.triggeredAlarms.delete(alarm.id);
+
     this.activeLocationAlarms.set(alarm.id, {
       alarm,
       currentLocation: null,
@@ -89,6 +102,7 @@ class LocationAlarmService {
 
   async removeLocationAlarm(alarmId: string): Promise<void> {
     this.activeLocationAlarms.delete(alarmId);
+    this.triggeredAlarms.delete(alarmId);
     console.log(`Removed location alarm: ${alarmId}`);
 
     if (this.activeLocationAlarms.size === 0) {
@@ -96,20 +110,41 @@ class LocationAlarmService {
     }
   }
 
-  updateLocationAlarms(alarms: LocationAlarm[]): void {
-    this.activeLocationAlarms.clear();
-
+  async updateLocationAlarms(alarms: LocationAlarm[]): Promise<void> {
     const enabledAlarms = alarms.filter(alarm => alarm.isEnabled && alarm.targetLocation);
-    enabledAlarms.forEach(alarm => this.addLocationAlarm(alarm));
 
-    if (enabledAlarms.length === 0) {
-      console.log('No location alarms to track');
-    } else {
-      console.log(`Updated location alarms. Active count: ${this.activeLocationAlarms.size}`);
+    const incomingIds = new Set(enabledAlarms.map(alarm => alarm.id));
+
+    // Remove alarms that are no longer active
+    for (const existingId of Array.from(this.activeLocationAlarms.keys())) {
+      if (!incomingIds.has(existingId)) {
+        this.activeLocationAlarms.delete(existingId);
+        this.triggeredAlarms.delete(existingId);
+      }
     }
 
+    // Add or update active alarms
+    enabledAlarms.forEach((alarm) => {
+      this.addLocationAlarm(alarm);
+    });
+
+    // Drop triggered flags for alarms that are no longer active
+    this.triggeredAlarms.forEach((id) => {
+      if (!incomingIds.has(id)) {
+        this.triggeredAlarms.delete(id);
+      }
+    });
+
     if (this.activeLocationAlarms.size === 0) {
+      console.log('No location alarms to track');
       void this.stopLocationTracking();
+      return;
+    }
+
+    console.log(`Updated location alarms. Active count: ${this.activeLocationAlarms.size}`);
+
+    if (!this.isTracking) {
+      await this.startLocationTracking();
     }
   }
 
@@ -146,6 +181,12 @@ class LocationAlarmService {
 
       if (this.shouldTriggerAlarm(alarm, wasInRange, isInRange)) {
         await this.triggerLocationAlarm(alarm, updatedConfig);
+        this.triggeredAlarms.add(alarmId);
+        continue;
+      }
+
+      if (!isInRange && this.triggeredAlarms.has(alarmId)) {
+        this.triggeredAlarms.delete(alarmId);
       }
     }
   }
@@ -167,10 +208,14 @@ class LocationAlarmService {
     
     const body = `Alarm: ${alarm.label}`;
     
-  await notificationManager.showLocationAlarmNotification(alarm, title, body);
+    await notificationManager.showLocationAlarmNotification(alarm, title, body);
 
     if (this.onAlarmTrigger) {
       this.onAlarmTrigger(alarm);
+    }
+
+    if (alarm.repeatType === AlarmRepeatType.ONCE) {
+      this.onAlarmComplete?.(alarm);
     }
 
     // LocationAlarms don't have deleteAfterNotification property

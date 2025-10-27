@@ -1,10 +1,3 @@
-import MapViewComponent from '@/components/map/MapViewComponent';
-import { View } from 'react-native';
+import MapScreen from '@/features/map/screens/MapScreen';
 
-export default function AlarmHistoryPage() {
-  return (
-    <View className="flex-1">
-      <MapViewComponent />
-    </View>
-  );
-}
+export default MapScreen;

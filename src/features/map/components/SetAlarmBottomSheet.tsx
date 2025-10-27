@@ -1,8 +1,13 @@
-import { LOCATION_REPEAT_OPTIONS, LocationRepeatOption } from '@/shared/types/alarmLocation.type';
+import { useAlarms } from '@/hooks/useAlarms';
+import { convertSoundToAlarmSound } from '@/shared/constants/sounds';
+import { AlarmType } from '@/shared/enums';
+import { type LocationAlarm, isLocationAlarm } from '@/shared/types/alarm.type';
+import { LOCATION_REPEAT_OPTIONS, type LocationRepeatOption, enumToLegacyRepeat, legacyRepeatToEnum } from '@/shared/types/alarmLocation.type';
 import { calculateDistance } from '@/shared/utils';
 import { getAllSounds, resolveSound, resolveSoundId } from '@/shared/utils/soundUtils';
+import { selectAlarms, useAlarmStore } from '@/store/alarmStore';
 import { useLocationStore } from '@/store/locationStore';
-import { useMapAlarmStore } from '@/store/mapAlarmStore';
+import { mapAlarmActions, mapAlarmSelectors, useMapAlarmStore } from '@/store/mapAlarmStore';
 import { Ionicons } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import Slider from '@react-native-community/slider';
@@ -17,7 +22,7 @@ import {
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-interface SetAlarmComponentProps {
+interface SetAlarmBottomSheetProps {
   isVisible: boolean;
   onClose: () => void;
   currentLocation?: {
@@ -26,10 +31,26 @@ interface SetAlarmComponentProps {
   } | null;
 }
 
-const SetAlarmComponent = React.memo(({ isVisible, onClose, currentLocation }: SetAlarmComponentProps) => {
-  const { selectedLocation, editingAlarm, addAlarm, updateAlarm, setEditingAlarm } = useMapAlarmStore();
+const SetAlarmBottomSheet: React.FC<SetAlarmBottomSheetProps> = ({ isVisible, onClose, currentLocation }) => {
+  const selectedLocation = useMapAlarmStore(mapAlarmSelectors.selectedLocation);
+  const editingAlarmId = useMapAlarmStore(mapAlarmSelectors.editingAlarmId);
+  const setEditingAlarmId = useMapAlarmStore(mapAlarmActions.setEditingAlarmId);
   const { selectedDestination } = useLocationStore();
-  
+  const allAlarms = useAlarmStore(selectAlarms);
+  const { addAlarm, updateAlarm } = useAlarms();
+
+  const locationAlarms = useMemo(
+    () => allAlarms.filter(isLocationAlarm),
+    [allAlarms],
+  );
+
+  const editingAlarm = useMemo<LocationAlarm | undefined>(() => {
+    if (!editingAlarmId) {
+      return undefined;
+    }
+    return locationAlarms.find((alarm) => alarm.id === editingAlarmId);
+  }, [editingAlarmId, locationAlarms]);
+
   const availableSounds = useMemo(() => getAllSounds(), []);
   const defaultSoundId = availableSounds[0]?.id ?? resolveSoundId();
 
@@ -47,14 +68,12 @@ const SetAlarmComponent = React.memo(({ isVisible, onClose, currentLocation }: S
 
   useEffect(() => {
     if (editingAlarm) {
-      // Pre-fill form when editing
-      setLineName(editingAlarm.lineName);
-      setTimeBeforeArrival(editingAlarm.timeBeforeArrival);
-      setRadius(editingAlarm.radius);
-      setRepeat(editingAlarm.repeat);
-      setSelectedSoundId(resolveSoundId(editingAlarm.sound));
+      setLineName(editingAlarm.label);
+      setTimeBeforeArrival(editingAlarm.timeBeforeArrival ?? 5);
+      setRadius(editingAlarm.radiusMeters ?? 500);
+      setRepeat(enumToLegacyRepeat(editingAlarm.repeatType));
+      setSelectedSoundId(resolveSoundId(editingAlarm.sound?.id));
     } else {
-      // Reset form for new alarm
       setLineName('');
       setTimeBeforeArrival(5);
       setRadius(500);
@@ -64,8 +83,8 @@ const SetAlarmComponent = React.memo(({ isVisible, onClose, currentLocation }: S
   }, [defaultSoundId, editingAlarm, isVisible]);
 
   const handleSaveAlarm = async () => {
-    const location = selectedLocation || selectedDestination;
-    
+    const location = selectedLocation || selectedDestination || editingAlarm?.targetLocation;
+
     if (!location) {
       Alert.alert('Error', 'No location selected');
       return;
@@ -79,28 +98,52 @@ const SetAlarmComponent = React.memo(({ isVisible, onClose, currentLocation }: S
     try {
       setIsLoading(true);
 
-      const alarmData = {
+      const targetLocation = {
+        id: location.mapbox_id || location.id,
         name: location.name,
         address: location.address,
-        lat: location.coordinates.latitude,
-        long: location.coordinates.longitude,
-        radius,
-        lineName: lineName.trim(),
-        timeBeforeArrival,
-  sound: selectedSoundId,
-        repeat,
-        isActive: true,
+        coordinates: {
+          latitude: location.coordinates.latitude,
+          longitude: location.coordinates.longitude,
+        },
         mapbox_id: location.mapbox_id,
       };
 
-      if (editingAlarm) {
-        // Update existing alarm
-        await updateAlarm(editingAlarm.id, alarmData);
-        setEditingAlarm(null);
+      const selectedAlarmSound = convertSoundToAlarmSound(selectedSound);
+      const repeatType = legacyRepeatToEnum(repeat);
+
+      if (editingAlarm && editingAlarmId) {
+        await updateAlarm(editingAlarmId, {
+          type: AlarmType.LOCATION,
+          label: lineName.trim(),
+          targetLocation,
+          radiusMeters: radius,
+          timeBeforeArrival,
+          repeatType,
+          sound: selectedAlarmSound,
+          arrivalTrigger: true,
+        });
+
+        setEditingAlarmId(null);
         Alert.alert('Success', 'Alarm updated successfully!');
       } else {
-        // Create new alarm
-        await addAlarm(alarmData);
+        await addAlarm({
+          type: AlarmType.LOCATION,
+          label: lineName.trim(),
+          isEnabled: true,
+          sound: selectedAlarmSound,
+          volume: 1,
+          vibrate: true,
+          snoozeEnabled: false,
+          snoozeDuration: 5,
+          maxSnoozeCount: 0,
+          targetLocation,
+          radiusMeters: radius,
+          timeBeforeArrival,
+          arrivalTrigger: true,
+          repeatType,
+        } as Omit<LocationAlarm, 'id' | 'createdAt' | 'updatedAt'>);
+
         Alert.alert('Success', 'Alarm saved successfully!');
       }
 
@@ -114,13 +157,13 @@ const SetAlarmComponent = React.memo(({ isVisible, onClose, currentLocation }: S
   };
 
   const handleClose = () => {
-    setEditingAlarm(null);
+    setEditingAlarmId(null);
     onClose();
   };
 
   if (!isVisible) return null;
 
-  const location = selectedLocation || selectedDestination;
+  const location = selectedLocation || selectedDestination || editingAlarm?.targetLocation;
 
   return (
     <View
@@ -145,11 +188,10 @@ const SetAlarmComponent = React.memo(({ isVisible, onClose, currentLocation }: S
           handleIndicatorStyle={{
             backgroundColor: 'rgba(255,255,255,0.3)',
           }}
-          enableContentPanningGesture={true}
+          enableContentPanningGesture
           onClose={handleClose}
         >
           <SafeAreaView className="flex-1">
-            {/* Header */}
             <View className="flex-row items-center justify-between px-4 pb-4 border-b border-gray-600">
               <TouchableOpacity onPress={handleClose}>
                 <Ionicons name="close" size={24} color="#fff" />
@@ -164,7 +206,6 @@ const SetAlarmComponent = React.memo(({ isVisible, onClose, currentLocation }: S
               contentContainerStyle={{ padding: 16 }}
               style={{ backgroundColor: '#1f2937' }}
             >
-              {/* Location Info */}
               {location && (
                 <View className="bg-gray-800 p-4 rounded-xl mb-6">
                   <Text className="text-white text-lg font-bold mb-2">Destination</Text>
@@ -172,16 +213,17 @@ const SetAlarmComponent = React.memo(({ isVisible, onClose, currentLocation }: S
                   <Text className="text-gray-300 text-sm mt-1">{location.address}</Text>
                   {currentLocation && (
                     <Text className="text-blue-400 text-sm mt-2">
-                      Distance: {calculateDistance(
+                      Distance:
+                      {calculateDistance(
                         { latitude: currentLocation.latitude, longitude: currentLocation.longitude },
                         { latitude: location.coordinates.latitude, longitude: location.coordinates.longitude }
-                      ).toFixed(2)} km
+                      ).toFixed(2)}{' '}
+                      km
                     </Text>
                   )}
                 </View>
               )}
 
-              {/* Line Name */}
               <View className="mb-6">
                 <Text className="text-white text-base font-medium mb-2">Line Name *</Text>
                 <TextInput
@@ -193,13 +235,12 @@ const SetAlarmComponent = React.memo(({ isVisible, onClose, currentLocation }: S
                 />
               </View>
 
-              {/* Time Before Arrival */}
               <View className="mb-6">
                 <Text className="text-white text-base font-medium mb-3">
                   Time Before Arrival: {timeBeforeArrival} min
                 </Text>
                 <View className="flex-row flex-wrap gap-2">
-                  {timeOptions.map((time) => (
+                  {timeOptions.map(time => (
                     <TouchableOpacity
                       key={time}
                       className={`px-4 py-2 rounded-full ${
@@ -213,7 +254,6 @@ const SetAlarmComponent = React.memo(({ isVisible, onClose, currentLocation }: S
                 </View>
               </View>
 
-              {/* Radius */}
               <View className="mb-6">
                 <Text className="text-white text-base font-medium mb-2">
                   Radius: {radius}m
@@ -234,14 +274,11 @@ const SetAlarmComponent = React.memo(({ isVisible, onClose, currentLocation }: S
                 </View>
               </View>
 
-              {/* Alarm Sound */}
               <View className="mb-6">
                 <Text className="text-white text-base font-medium mb-3">Alarm Sound</Text>
-                <Text className="text-gray-300 text-sm mb-3">
-                  Current: {selectedSound.title}
-                </Text>
+                <Text className="text-gray-300 text-sm mb-3">Current: {selectedSound.title}</Text>
                 <View className="flex-row flex-wrap gap-2">
-                  {soundOptions.map((soundOption) => (
+                  {soundOptions.map(soundOption => (
                     <TouchableOpacity
                       key={soundOption.id}
                       className={`px-4 py-2 rounded-full ${
@@ -255,11 +292,10 @@ const SetAlarmComponent = React.memo(({ isVisible, onClose, currentLocation }: S
                 </View>
               </View>
 
-              {/* Repeat */}
               <View className="mb-8">
                 <Text className="text-white text-base font-medium mb-3">Repeat</Text>
                 <View className="flex-row flex-wrap gap-2">
-                  {repeatOptions.map((repeatOption) => (
+                  {repeatOptions.map(repeatOption => (
                     <TouchableOpacity
                       key={repeatOption}
                       className={`px-6 py-3 rounded-full ${
@@ -273,21 +309,13 @@ const SetAlarmComponent = React.memo(({ isVisible, onClose, currentLocation }: S
                 </View>
               </View>
 
-              {/* Save Button */}
               <TouchableOpacity
-                className={`p-4 rounded-xl ${
-                  isLoading ? 'bg-gray-600' : 'bg-blue-500'
-                }`}
+                className={`p-4 rounded-xl ${isLoading ? 'bg-gray-600' : 'bg-blue-500'}`}
                 onPress={handleSaveAlarm}
                 disabled={isLoading}
               >
                 <Text className="text-white text-center font-bold text-lg">
-                  {isLoading 
-                    ? 'Saving...' 
-                    : editingAlarm 
-                      ? 'Update Alarm' 
-                      : 'Save Alarm'
-                  }
+                  {isLoading ? 'Saving...' : editingAlarm ? 'Update Alarm' : 'Save Alarm'}
                 </Text>
               </TouchableOpacity>
             </BottomSheetScrollView>
@@ -296,8 +324,6 @@ const SetAlarmComponent = React.memo(({ isVisible, onClose, currentLocation }: S
       </GestureHandlerRootView>
     </View>
   );
-});
+};
 
-SetAlarmComponent.displayName = 'SetAlarmComponent';
-
-export default SetAlarmComponent;
+export default React.memo(SetAlarmBottomSheet);

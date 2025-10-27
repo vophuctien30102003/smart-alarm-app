@@ -8,32 +8,51 @@ export const useNotificationHandler = () => {
   const alarms = useAlarmStore(state => state.alarms);
   const responseListener = useRef<Notifications.Subscription | null>(null);
   const notificationListener = useRef<Notifications.Subscription | null>(null);
+  const lastTriggeredRef = useRef<Record<string, number>>({});
+
+  const triggerIfNeeded = useCallback((alarmId: string | undefined) => {
+    if (!alarmId) {
+      return;
+    }
+
+    const now = Date.now();
+    const lastTriggeredAt = lastTriggeredRef.current[alarmId] ?? 0;
+    if (now - lastTriggeredAt < 3000) {
+      return;
+    }
+
+    const alarm = alarms.find(a => a.id === alarmId);
+    if (alarm) {
+      lastTriggeredRef.current[alarmId] = now;
+      triggerAlarm(alarm);
+    } else {
+      console.warn('Alarm not found for notification:', alarmId);
+    }
+  }, [alarms, triggerAlarm]);
 
   const handleNotificationResponse = useCallback((response: Notifications.NotificationResponse) => {
     const { data } = response.notification.request.content;
-    
-    if (data?.type === 'alarm' && data?.alarmId) {
-      const alarm = alarms.find(a => a.id === data.alarmId);
-      if (alarm) {
-        triggerAlarm(alarm);
-      }
+    const notificationType = data?.type;
+
+    if ((notificationType === 'alarm' || notificationType === 'sleep-alarm' || notificationType === 'location-alarm')) {
+      const alarmId = typeof data?.alarmId === 'string' ? data.alarmId : undefined;
+      triggerIfNeeded(alarmId);
     }
-  }, [alarms, triggerAlarm]);
+  }, [triggerIfNeeded]);
 
   const handleNotificationReceived = useCallback((notification: Notifications.Notification) => {
     const { data } = notification.request.content;
-    
-    if (data?.type === 'alarm' && data?.alarmId) {
-      const alarm = alarms.find(a => a.id === data.alarmId);
-      if (alarm) {
-        triggerAlarm(alarm);
-      }
+    const notificationType = data?.type;
+
+    if ((notificationType === 'alarm' || notificationType === 'sleep-alarm' || notificationType === 'location-alarm')) {
+      const alarmId = typeof data?.alarmId === 'string' ? data.alarmId : undefined;
+      triggerIfNeeded(alarmId);
     }
-  }, [alarms, triggerAlarm]);
+  }, [triggerIfNeeded]);
 
   useEffect(() => {
     // Initialize notification manager
-    notificationManager.initialize();
+    void notificationManager.initialize();
 
     // Set up listeners
     responseListener.current = notificationManager.addNotificationResponseListener(handleNotificationResponse);

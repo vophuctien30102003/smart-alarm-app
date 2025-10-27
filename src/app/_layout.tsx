@@ -1,11 +1,11 @@
 import TabNavigation from "@/components/navigation/TabNavigation";
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import { NotificationProvider } from "@/contexts/NotificationProvider";
+import { AlarmModal } from "@/features/alarm-notify";
 import { Stack } from "expo-router";
 import { memo } from "react";
 import { View } from "react-native";
 import "react-native-get-random-values";
-import { AlarmModal } from "../components/alarm";
 import "./globals.css";
 
 const MemoizedTabNavigation = memo(TabNavigation);

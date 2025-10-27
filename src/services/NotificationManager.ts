@@ -18,9 +18,7 @@ Notifications.setNotificationHandler({
     if (Platform.OS === 'android') {
       return {
         ...baseResponse,
-        shouldShowBanner: false,
         shouldShowList: false,
-        shouldShowAlert: true,
       };
     }
 

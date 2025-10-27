@@ -1,14 +1,14 @@
-import { DEFAULT_ALARM_SOUNDS } from "@/shared/constants";
-import { WeekDay } from "@/shared/enums";
-import type { SleepAlarmFormData } from "@/shared/types/sleepAlarmForm.type";
-import { formatTime, timeStringToDate } from "@/shared/utils/timeUtils";
-import { LinearGradient } from "expo-linear-gradient";
-import { Back } from "iconsax-react-native";
-import { ScrollView, TouchableOpacity, View } from "react-native";
-import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { Text } from "../ui/text";
-import { CustomAlarmClock } from "./CustomAlarmClock";
-import { useSleepAlarmForm } from "./hooks/useSleepAlarmForm";
+import { Text } from '@/components/ui/text';
+import { DEFAULT_ALARM_SOUNDS } from '@/shared/constants';
+import { WeekDay } from '@/shared/enums';
+import type { SleepAlarmFormData } from '@/shared/types/sleepAlarmForm.type';
+import { formatTime, timeStringToDate } from '@/shared/utils/timeUtils';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Back } from 'iconsax-react-native';
+import { ScrollView, TouchableOpacity, View } from 'react-native';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { CustomAlarmClock } from '../components/CustomAlarmClock';
+import { useSleepAlarmForm } from '../hooks/useSleepAlarmForm';
 
 interface Props {
     onSave: (alarmData: SleepAlarmFormData) => void;
@@ -19,16 +19,28 @@ interface Props {
 export default function SetAlarmScreen({ onSave, onBack, initialData }: Props) {
     const { state, actions } = useSleepAlarmForm({ initialData });
 
-    const { selectedDays, bedtime, wakeTime, sleepDuration, snoozeMinutes, snoozeEnabled, volume, soundId, gentleWakeMinutes, vibrate, isPickerVisibleFor } = state;
+    const {
+        selectedDays,
+        bedtime,
+        wakeTime,
+        sleepDuration,
+        snoozeMinutes,
+        snoozeEnabled,
+        volume,
+        soundId,
+        gentleWakeMinutes,
+        vibrate,
+        isPickerVisibleFor,
+    } = state;
 
     const days = [
-        { key: WeekDay.MONDAY, label: "Mo" },
-        { key: WeekDay.TUESDAY, label: "Tu" },
-        { key: WeekDay.WEDNESDAY, label: "We" },
-        { key: WeekDay.THURSDAY, label: "Th" },
-        { key: WeekDay.FRIDAY, label: "Fr" },
-        { key: WeekDay.SATURDAY, label: "Sa" },
-        { key: WeekDay.SUNDAY, label: "Su" },
+        { key: WeekDay.MONDAY, label: 'Mo' },
+        { key: WeekDay.TUESDAY, label: 'Tu' },
+        { key: WeekDay.WEDNESDAY, label: 'We' },
+        { key: WeekDay.THURSDAY, label: 'Th' },
+        { key: WeekDay.FRIDAY, label: 'Fr' },
+        { key: WeekDay.SATURDAY, label: 'Sa' },
+        { key: WeekDay.SUNDAY, label: 'Su' },
     ];
 
     const { toggleDay, adjustBedtime, adjustWakeTime } = actions;
@@ -39,10 +51,10 @@ export default function SetAlarmScreen({ onSave, onBack, initialData }: Props) {
     };
 
     const handleTimeConfirm = (date: Date) => {
-        if (isPickerVisibleFor === "bedtime") {
+        if (isPickerVisibleFor === 'bedtime') {
             actions.setBedtime(formatTime(date));
         }
-        if (isPickerVisibleFor === "wake") {
+        if (isPickerVisibleFor === 'wake') {
             actions.setWakeTime(formatTime(date));
         }
         actions.setPickerVisibleFor(null);
@@ -56,7 +68,7 @@ export default function SetAlarmScreen({ onSave, onBack, initialData }: Props) {
         <LinearGradient className="flex-1" colors={["#9887C3", "#090212"]}>
             <View className="flex-row justify-between items-center px-5 pt-[60px] pb-5">
                 <TouchableOpacity onPress={onBack}>
-                    <Back size="32" color="#d9e3f0"/>
+                    <Back size="32" color="#d9e3f0" />
                 </TouchableOpacity>
                 <TouchableOpacity onPress={handleSave} className="rounded-full px-4 py-2 bg-[#baaee0]">
                     <Text className="text-[#F8FAFC] text-[17px] font-medium">
@@ -68,15 +80,18 @@ export default function SetAlarmScreen({ onSave, onBack, initialData }: Props) {
                 className="flex-1 px-5"
                 showsVerticalScrollIndicator={false}
             >
-                <Text className="text-[17px] text-[#F8FAFC] mb-2" >Day of operation</Text>
-                <View className="flex-row justify-between mb-8 p-4 border border-[#9887C3] rounded-2xl" style={{ backgroundColor: "rgba(20, 30, 48, 0.25)" }}>
-                    {days.map((day) => (
+                <Text className="text-[17px] text-[#F8FAFC] mb-2">Day of operation</Text>
+                <View
+                    className="flex-row justify-between mb-8 p-4 border border-[#9887C3] rounded-2xl"
+                    style={{ backgroundColor: 'rgba(20, 30, 48, 0.25)' }}
+                >
+                    {days.map(day => (
                         <TouchableOpacity
                             key={day.key}
                             className={`w-10 h-10 rounded-full justify-center items-center ${
                                 selectedDays.includes(day.key)
-                                    ? "bg-[#9887C3]"
-                                    : "bg-white/10"
+                                    ? 'bg-[#9887C3]'
+                                    : 'bg-white/10'
                             }`}
                             onPress={() => toggleDay(day.key)}
                         >
@@ -95,7 +110,7 @@ export default function SetAlarmScreen({ onSave, onBack, initialData }: Props) {
                                 Bedtime
                             </Text>
                         </View>
-                        <TouchableOpacity onPress={() => actions.setPickerVisibleFor("bedtime") }>
+                        <TouchableOpacity onPress={() => actions.setPickerVisibleFor('bedtime')}>
                             <Text className="text-white text-4xl font-light">
                                 {bedtime}
                             </Text>
@@ -123,7 +138,7 @@ export default function SetAlarmScreen({ onSave, onBack, initialData }: Props) {
                                 Wake up
                             </Text>
                         </View>
-                        <TouchableOpacity onPress={() => actions.setPickerVisibleFor("wake") }>
+                        <TouchableOpacity onPress={() => actions.setPickerVisibleFor('wake')}>
                             <Text className="text-white text-4xl font-light">
                                 {wakeTime}
                             </Text>
@@ -181,16 +196,16 @@ export default function SetAlarmScreen({ onSave, onBack, initialData }: Props) {
                 <CustomAlarmClock
                     gentleWakeMinutes={gentleWakeMinutes}
                     onSelectGentleWake={actions.setGentleWakeMinutes}
-                    gentleWakeOptions={[0,5,10,15]}
+                    gentleWakeOptions={[0, 5, 10, 15]}
                     snoozeEnabled={snoozeEnabled}
                     onToggleSnooze={actions.setSnoozeEnabled}
                     snoozeMinutes={snoozeMinutes}
-                    snoozeOptions={[5,10,15]}
+                    snoozeOptions={[5, 10, 15]}
                     onSelectSnooze={actions.setSnoozeMinutes}
                     volume={volume}
                     onChangeVolume={actions.setVolume}
                     soundId={soundId}
-                    soundOptions={DEFAULT_ALARM_SOUNDS.map(s => ({ id: s.id, title: s.title }))}
+                    soundOptions={DEFAULT_ALARM_SOUNDS.map(sound => ({ id: sound.id, title: sound.title }))}
                     onSelectSound={actions.setSoundId}
                     vibrate={vibrate}
                     onToggleVibrate={actions.setVibrate}
@@ -200,7 +215,7 @@ export default function SetAlarmScreen({ onSave, onBack, initialData }: Props) {
                 isVisible={isPickerVisibleFor !== null}
                 mode="time"
                 is24Hour
-                date={timeStringToDate(isPickerVisibleFor === "wake" ? wakeTime : bedtime)}
+                date={timeStringToDate(isPickerVisibleFor === 'wake' ? wakeTime : bedtime)}
                 onConfirm={handleTimeConfirm}
                 onCancel={handleTimeCancel}
                 minuteInterval={1}

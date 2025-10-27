@@ -1,15 +1,15 @@
-import { WeekDay } from "@/shared/enums";
-import type { SleepAlarmFormData } from "@/shared/types/sleepAlarmForm.type";
-import { addMinutesToTimeString, formatDurationFromMinutes, getMinutesBetweenTimes } from "@/shared/utils/timeUtils";
-import { useCallback, useMemo, useState } from "react";
+import { WeekDay } from '@/shared/enums';
+import type { SleepAlarmFormData } from '@/shared/types/sleepAlarmForm.type';
+import { addMinutesToTimeString, formatDurationFromMinutes, getMinutesBetweenTimes } from '@/shared/utils/timeUtils';
+import { useCallback, useMemo, useState } from 'react';
 
-export type PickerTarget = "bedtime" | "wake" | null;
+export type PickerTarget = 'bedtime' | 'wake' | null;
 
-const DEFAULT_BEDTIME = "22:15";
-const DEFAULT_WAKE_TIME = "06:15";
+const DEFAULT_BEDTIME = '22:15';
+const DEFAULT_WAKE_TIME = '06:15';
 const DEFAULT_SNOOZE_MINUTES = 10;
 const DEFAULT_VOLUME = 0.8;
-const DEFAULT_SOUND_ID = "sound_0";
+const DEFAULT_SOUND_ID = 'sound_0';
 const DEFAULT_GENTLE_WAKE_MINUTES = 0;
 const DEFAULT_VIBRATE = true;
 const DEFAULT_SNOOZE_ENABLED = true;
@@ -22,7 +22,7 @@ export function useSleepAlarmForm({ initialData }: UseSleepAlarmFormOptions = {}
     const [selectedDays, setSelectedDays] = useState<WeekDay[]>(initialData?.selectedDays ?? []);
     const [bedtime, setBedtime] = useState(initialData?.bedtime ?? DEFAULT_BEDTIME);
     const [wakeTime, setWakeTime] = useState(initialData?.wakeTime ?? DEFAULT_WAKE_TIME);
-    const [label, setLabel] = useState(initialData?.label ?? "");
+    const [label, setLabel] = useState(initialData?.label ?? '');
     const [snoozeEnabled, setSnoozeEnabled] = useState(initialData?.snoozeEnabled ?? DEFAULT_SNOOZE_ENABLED);
     const [snoozeMinutes, setSnoozeMinutes] = useState(initialData?.snoozeMinutes ?? DEFAULT_SNOOZE_MINUTES);
     const [volume, setVolume] = useState(initialData?.volume ?? DEFAULT_VOLUME);
@@ -35,10 +35,10 @@ export function useSleepAlarmForm({ initialData }: UseSleepAlarmFormOptions = {}
     const sleepDuration = useMemo(() => formatDurationFromMinutes(sleepMinutes), [sleepMinutes]);
 
     const toggleDay = useCallback((day: WeekDay) => {
-        setSelectedDays(prev => prev.includes(day)
+        setSelectedDays(prev => (prev.includes(day)
             ? prev.filter(d => d !== day)
             : [...prev, day]
-        );
+        ));
     }, []);
 
     const adjustBedtime = useCallback((delta: number) => {

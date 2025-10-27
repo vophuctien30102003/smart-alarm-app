@@ -99,7 +99,7 @@ export interface AlarmActions {
 
   startLocationTracking: () => Promise<void>;
   stopLocationTracking: () => Promise<void>;
-  updateLocationAlarms: () => void;
+  updateLocationAlarms: () => Promise<void>;
   getLocationAlarmStatus: (alarmId: string) => LocationAlarmStatus | null;
 }
 
@@ -118,7 +118,6 @@ export const isSleepAlarm = (alarm: Alarm): alarm is SleepAlarm => {
   return alarm.type === AlarmType.SLEEP;
 };
 
-// Legacy types for backward compatibility (will be removed after migration)
 export interface LegacyMapAlarm {
   id: string;
   name: string;

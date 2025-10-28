@@ -189,12 +189,12 @@ export class NotificationManager {
 
       const bedtimeContent = {
         title: '🛌 Bedtime Alarm',
-        body: `Đã đến giờ đi ngủ. Lịch ngủ: ${sleepDurationDisplay} giờ.`,
+        body: `It's time for bed. Sleep schedule: ${sleepDurationDisplay} hours.`,
       };
 
       const wakeContent = {
         title: '☀️ Wake Up Alarm',
-        body: 'Đến giờ thức dậy. Chúc bạn một ngày tốt lành!',
+        body: "It's time to wake up. Have a great day!",
       };
 
       const bedtimeData = {

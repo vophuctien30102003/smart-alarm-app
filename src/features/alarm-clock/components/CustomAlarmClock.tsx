@@ -79,7 +79,7 @@ export function CustomAlarmClock({
             </View>
 
             {showDetails && (
-                <View className="space-y-4">
+                <View className="space-y-4 flex-col gap-4 mb-4">
                     <SettingRow
                         title="Gentle wake up"
                         icon="🎵"

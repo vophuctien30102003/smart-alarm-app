@@ -62,11 +62,11 @@ function ListAlarmClock({ alarms, onEditAlarm, onAddNewAlarm }: Props) {
             <Text className="text-[#8179FF] text-left text-lg">Add schedule</Text>
         </TouchableOpacity>
     ), [onAddNewAlarm]);
-    const empty = useCallback(() => (
-        <TouchableOpacity style={{ backgroundColor: 'rgba(20, 30, 48, 0.25)' }} className="rounded-xl p-4 border border-white/20" onPress={onAddNewAlarm}>
-            <Text className="text-[#8179FF] text-left text-lg">Set your first sleep schedule</Text>
-        </TouchableOpacity>
-    ), [onAddNewAlarm]);
+    // const empty = useCallback(() => (
+    //     <TouchableOpacity style={{ backgroundColor: 'rgba(20, 30, 48, 0.25)' }} className="rounded-xl p-4 border border-white/20" onPress={onAddNewAlarm}>
+    //         <Text className="text-[#8179FF] text-left text-lg">Set your first sleep schedule</Text>
+    //     </TouchableOpacity>
+    // ), [onAddNewAlarm]);
     return (
         <View className="flex-1">
             <FlatList
@@ -74,7 +74,7 @@ function ListAlarmClock({ alarms, onEditAlarm, onAddNewAlarm }: Props) {
                 keyExtractor={(item) => item.id}
                 renderItem={renderItem}
                 ListFooterComponent={footer}
-                ListEmptyComponent={empty}
+                // ListEmptyComponent={empty}
                 contentContainerStyle={{ paddingBottom: 24 }}
             />
         </View>

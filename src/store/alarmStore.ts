@@ -1,4 +1,7 @@
 import { AlarmRepeatType, AlarmType } from '@/shared/enums';
+import type { AlarmPayload } from '@/shared/types/alarmPayload';
+import { formatAlarmLabel } from '@/shared/utils/alarmFormatters';
+import { ensureValidAlarmPayload } from '@/shared/utils/alarmValidation';
 import { createLocationTracker } from '@/store/modules/locationTracker';
 import { cancelSleepNotifications, getNextSleepEventDate, scheduleSleepNotifications } from '@/store/modules/sleepScheduler';
 import { clearSnoozeTimeout, scheduleSnoozeTimeout } from '@/store/modules/snoozeManager';
@@ -7,14 +10,14 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import notificationManager from '../services/NotificationManager';
 import {
-    Alarm,
-    AlarmStore,
-    isLocationAlarm,
-    isSleepAlarm,
-    isTimeAlarm,
-    LocationAlarm,
-    LocationTarget,
-    SleepAlarm,
+  Alarm,
+  AlarmStore,
+  isLocationAlarm,
+  isSleepAlarm,
+  isTimeAlarm,
+  LocationAlarm,
+  LocationTarget,
+  SleepAlarm,
 } from '../shared/types/alarm.type';
 import type { LocationAlarmStatus } from '../shared/types/locationTracking.type';
 import { generateTimestampId } from '../shared/utils/idUtils';
@@ -26,6 +29,157 @@ const locationTracker = createLocationTracker();
 const MAX_SNOOZE_COUNT = 3;
 const DEFAULT_SNOOZE_DURATION = 5;
 const DEFAULT_VOLUME = 0.8;
+
+const alarmToPayload = (alarm: Alarm): AlarmPayload => {
+  switch (alarm.type) {
+    case AlarmType.TIME:
+      return {
+        type: AlarmType.TIME,
+        label: alarm.label,
+        isEnabled: alarm.isEnabled,
+        sound: alarm.sound,
+        volume: alarm.volume,
+        vibrate: alarm.vibrate,
+        snoozeEnabled: alarm.snoozeEnabled,
+        snoozeDuration: alarm.snoozeDuration,
+        maxSnoozeCount: alarm.maxSnoozeCount,
+        time: alarm.time,
+        repeatDays: alarm.repeatDays,
+        deleteAfterNotification: alarm.deleteAfterNotification,
+      };
+    case AlarmType.SLEEP:
+      return {
+        type: AlarmType.SLEEP,
+        label: alarm.label,
+        isEnabled: alarm.isEnabled,
+        sound: alarm.sound,
+        volume: alarm.volume,
+        vibrate: alarm.vibrate,
+        snoozeEnabled: alarm.snoozeEnabled,
+        snoozeDuration: alarm.snoozeDuration,
+        maxSnoozeCount: alarm.maxSnoozeCount,
+        bedtime: alarm.bedtime,
+        wakeUpTime: alarm.wakeUpTime,
+        repeatDays: alarm.repeatDays,
+        goalMinutes: alarm.goalMinutes,
+        gentleWakeMinutes: alarm.gentleWakeMinutes,
+      };
+    case AlarmType.LOCATION:
+    default:
+      return {
+        type: AlarmType.LOCATION,
+        label: alarm.label,
+        isEnabled: alarm.isEnabled,
+        sound: alarm.sound,
+        volume: alarm.volume,
+        vibrate: alarm.vibrate,
+        snoozeEnabled: alarm.snoozeEnabled,
+        snoozeDuration: alarm.snoozeDuration,
+        maxSnoozeCount: alarm.maxSnoozeCount,
+        targetLocation: alarm.targetLocation,
+        radiusMeters: alarm.radiusMeters,
+        timeBeforeArrival: alarm.timeBeforeArrival,
+        arrivalTrigger: alarm.arrivalTrigger,
+        repeatType: alarm.repeatType,
+      };
+  }
+};
+
+const normalizeAlarmPayload = (payload: AlarmPayload): AlarmPayload => {
+  const baseLabel = formatAlarmLabel({
+    label: payload.label,
+    type: payload.type,
+    repeatDays: 'repeatDays' in payload ? payload.repeatDays : undefined,
+  });
+
+  const base = {
+    ...payload,
+    label: baseLabel,
+    isEnabled: payload.isEnabled ?? true,
+    volume: payload.volume ?? DEFAULT_VOLUME,
+    vibrate: payload.vibrate ?? true,
+    snoozeEnabled: payload.snoozeEnabled ?? false,
+    snoozeDuration: payload.snoozeDuration ?? DEFAULT_SNOOZE_DURATION,
+    maxSnoozeCount: payload.maxSnoozeCount ?? MAX_SNOOZE_COUNT,
+  } as AlarmPayload;
+
+  if (base.type === AlarmType.TIME) {
+    return {
+      ...base,
+      repeatDays: base.repeatDays ?? [],
+      deleteAfterNotification: base.deleteAfterNotification ?? false,
+    };
+  }
+
+  if (base.type === AlarmType.SLEEP) {
+    return {
+      ...base,
+      repeatDays: base.repeatDays ?? [],
+    };
+  }
+
+  return {
+    ...base,
+    repeatType: base.repeatType ?? AlarmRepeatType.ONCE,
+    arrivalTrigger: base.arrivalTrigger ?? true,
+  };
+};
+
+const buildAlarmFromPayload = (
+  payload: AlarmPayload,
+  base: Pick<Alarm, 'id' | 'createdAt' | 'notificationId'> & Partial<Alarm>
+): Alarm => {
+  const timestamp = new Date().toISOString();
+
+  const shared = {
+    id: base.id,
+    createdAt: base.createdAt,
+    updatedAt: timestamp,
+    label: payload.label!,
+    isEnabled: payload.isEnabled ?? true,
+    sound: payload.sound,
+    volume: payload.volume ?? DEFAULT_VOLUME,
+    vibrate: payload.vibrate ?? true,
+    snoozeEnabled: payload.snoozeEnabled ?? false,
+    snoozeDuration: payload.snoozeDuration ?? DEFAULT_SNOOZE_DURATION,
+    maxSnoozeCount: payload.maxSnoozeCount ?? MAX_SNOOZE_COUNT,
+    notificationId: base.notificationId,
+  } as const;
+
+  if (payload.type === AlarmType.TIME) {
+    return {
+      ...shared,
+      type: AlarmType.TIME,
+      time: payload.time,
+      repeatDays: payload.repeatDays ?? [],
+      deleteAfterNotification: payload.deleteAfterNotification ?? false,
+    };
+  }
+
+  if (payload.type === AlarmType.SLEEP) {
+    return {
+      ...shared,
+      type: AlarmType.SLEEP,
+      bedtime: payload.bedtime,
+      wakeUpTime: payload.wakeUpTime,
+      repeatDays: payload.repeatDays ?? [],
+      goalMinutes: payload.goalMinutes,
+      gentleWakeMinutes: payload.gentleWakeMinutes,
+      bedtimeNotificationIds: [],
+      wakeNotificationIds: [],
+    };
+  }
+
+  return {
+    ...shared,
+    type: AlarmType.LOCATION,
+    targetLocation: payload.targetLocation,
+    radiusMeters: payload.radiusMeters,
+    timeBeforeArrival: payload.timeBeforeArrival,
+    arrivalTrigger: payload.arrivalTrigger ?? true,
+    repeatType: payload.repeatType ?? AlarmRepeatType.ONCE,
+  };
+};
 
 export const useAlarmStore = create<AlarmStore>()(
   persist(
@@ -49,22 +203,16 @@ export const useAlarmStore = create<AlarmStore>()(
       isSnoozed: false,
       snoozeCount: 0,
 
-      addAlarm: async (alarm: Omit<Alarm, 'id' | 'createdAt' | 'updatedAt'>) => {
+      addAlarm: async (alarm: AlarmPayload) => {
         try {
           const nowIso = new Date().toISOString();
-          const newAlarm: Alarm = {
-            ...alarm,
+          const normalized = normalizeAlarmPayload(alarm);
+          ensureValidAlarmPayload(normalized);
+          const newAlarm = buildAlarmFromPayload(normalized, {
             id: generateTimestampId(),
             createdAt: nowIso,
-            updatedAt: nowIso,
-            volume: alarm.volume || DEFAULT_VOLUME,
-            snoozeDuration: alarm.snoozeDuration || DEFAULT_SNOOZE_DURATION,
-          } as Alarm;
-
-          if (isSleepAlarm(newAlarm)) {
-            newAlarm.bedtimeNotificationIds = [];
-            newAlarm.wakeNotificationIds = [];
-          }
+            notificationId: undefined,
+          } as Alarm);
 
           set((state) => ({
             alarms: [...state.alarms, newAlarm],
@@ -111,23 +259,23 @@ export const useAlarmStore = create<AlarmStore>()(
         }
       },
 
-      updateAlarm: async (id: string, updates: Partial<Alarm>) => {
+      updateAlarm: async (id: string, updates: Partial<AlarmPayload>) => {
         try {
           const alarm = get().alarms.find(a => a.id === id);
           if (!alarm) return;
 
           await get().cleanupAlarmTracking(alarm);
-          
-          const updatedAlarm: Alarm = {
-            ...alarm,
+          const basePayload = alarmToPayload(alarm);
+          const merged = normalizeAlarmPayload({
+            ...basePayload,
             ...updates,
-            updatedAt: new Date().toISOString(),
-          } as Alarm;
-
-          if (isSleepAlarm(updatedAlarm)) {
-            updatedAlarm.bedtimeNotificationIds = [];
-            updatedAlarm.wakeNotificationIds = [];
-          }
+            type: alarm.type,
+          } as AlarmPayload);
+          ensureValidAlarmPayload(merged);
+          const updatedAlarm = buildAlarmFromPayload(merged, {
+            ...alarm,
+            notificationId: alarm.notificationId,
+          });
 
           updateAlarmInState(id, () => updatedAlarm);
 

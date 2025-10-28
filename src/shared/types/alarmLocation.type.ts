@@ -1,35 +1,8 @@
-import { AlarmRepeatType } from '../enums';
 import type { LocationTarget } from './alarm.type';
 
 export type LocationRepeatOption = 'Once' | 'Weekdays' | 'Everyday';
 
-export const LOCATION_REPEAT_OPTIONS: LocationRepeatOption[] = [
-  'Once',
-  'Weekdays',
-  'Everyday',
-];
-
-export const legacyRepeatToEnum = (repeat: LocationRepeatOption): AlarmRepeatType => {
-  switch (repeat) {
-    case 'Weekdays':
-      return AlarmRepeatType.WEEKDAYS;
-    case 'Everyday':
-      return AlarmRepeatType.EVERYDAY;
-    default:
-      return AlarmRepeatType.ONCE;
-  }
-};
-
-export const enumToLegacyRepeat = (repeat: AlarmRepeatType): LocationRepeatOption => {
-  switch (repeat) {
-    case AlarmRepeatType.WEEKDAYS:
-      return 'Weekdays';
-    case AlarmRepeatType.EVERYDAY:
-      return 'Everyday';
-    default:
-      return 'Once';
-  }
-};
+export { enumToLegacyRepeat, legacyRepeatToEnum, LOCATION_REPEAT_OPTIONS } from '@/shared/utils/alarmOptions';
 
 export type LocationType = LocationTarget & {
   createdAt?: Date | string;

@@ -2,8 +2,11 @@ import { useAlarms } from '@/hooks/useAlarms';
 import { convertSoundToAlarmSound } from '@/shared/constants/sounds';
 import { AlarmType } from '@/shared/enums';
 import { type LocationAlarm, isLocationAlarm } from '@/shared/types/alarm.type';
-import { LOCATION_REPEAT_OPTIONS, type LocationRepeatOption, enumToLegacyRepeat, legacyRepeatToEnum } from '@/shared/types/alarmLocation.type';
+import type { LocationRepeatOption } from '@/shared/types/alarmLocation.type';
+import type { LocationAlarmPayload } from '@/shared/types/alarmPayload';
 import { calculateDistance } from '@/shared/utils';
+import { formatAlarmLabel } from '@/shared/utils/alarmFormatters';
+import { LOCATION_REPEAT_OPTIONS, enumToLegacyRepeat, legacyRepeatToEnum } from '@/shared/utils/alarmOptions';
 import { getAllSounds, resolveSound, resolveSoundId } from '@/shared/utils/soundUtils';
 import { selectAlarms, useAlarmStore } from '@/store/alarmStore';
 import { useLocationStore } from '@/store/locationStore';
@@ -13,12 +16,12 @@ import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import Slider from '@react-native-community/slider';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Alert,
-  SafeAreaView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    SafeAreaView,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -111,25 +114,30 @@ const SetAlarmBottomSheet: React.FC<SetAlarmBottomSheetProps> = ({ isVisible, on
 
       const selectedAlarmSound = convertSoundToAlarmSound(selectedSound);
       const repeatType = legacyRepeatToEnum(repeat);
+      const labelToUse = formatAlarmLabel({
+        label: lineName,
+        type: AlarmType.LOCATION,
+      });
 
       if (editingAlarm && editingAlarmId) {
-        await updateAlarm(editingAlarmId, {
+        const updates: Partial<LocationAlarmPayload> = {
           type: AlarmType.LOCATION,
-          label: lineName.trim(),
+          label: labelToUse,
           targetLocation,
           radiusMeters: radius,
           timeBeforeArrival,
           repeatType,
           sound: selectedAlarmSound,
           arrivalTrigger: true,
-        });
+        };
+        await updateAlarm(editingAlarmId, updates);
 
         setEditingAlarmId(null);
         Alert.alert('Success', 'Alarm updated successfully!');
       } else {
-        await addAlarm({
+        const payload: LocationAlarmPayload = {
           type: AlarmType.LOCATION,
-          label: lineName.trim(),
+          label: labelToUse,
           isEnabled: true,
           sound: selectedAlarmSound,
           volume: 1,
@@ -142,7 +150,9 @@ const SetAlarmBottomSheet: React.FC<SetAlarmBottomSheetProps> = ({ isVisible, on
           timeBeforeArrival,
           arrivalTrigger: true,
           repeatType,
-        } as Omit<LocationAlarm, 'id' | 'createdAt' | 'updatedAt'>);
+        };
+
+        await addAlarm(payload);
 
         Alert.alert('Success', 'Alarm saved successfully!');
       }

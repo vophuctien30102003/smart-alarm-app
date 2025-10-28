@@ -1,8 +1,9 @@
 import { useAlarms } from '@/hooks/useAlarms';
 import { AlarmType } from '@/shared/enums';
 import { isSleepAlarm } from '@/shared/types/alarm.type';
+import type { SleepAlarmPayload } from '@/shared/types/alarmPayload';
 import type { SleepAlarmFormData } from '@/shared/types/sleepAlarmForm.type';
-import { formatRepeatDays } from '@/shared/utils/timeUtils';
+import { formatAlarmLabel } from '@/shared/utils/alarmFormatters';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useMemo, useState } from 'react';
@@ -23,16 +24,18 @@ export default function AlarmClockPage() {
 
     const handleSaveAlarm = async (alarmData: SleepAlarmFormData) => {
         const editingAlarm = editingAlarmId ? sleepAlarms.find((alarm) => alarm.id === editingAlarmId) : undefined;
-        const fallbackLabel = alarmData.selectedDays.length > 0
-            ? formatRepeatDays(alarmData.selectedDays)
-            : 'Sleep schedule';
-        const labelToUse = (alarmData.label && alarmData.label.trim().length > 0)
+        const preferredLabel = alarmData.label?.trim().length
             ? alarmData.label
-            : editingAlarm?.label ?? fallbackLabel;
+            : editingAlarm?.label;
+        const labelToUse = formatAlarmLabel({
+            label: preferredLabel,
+            type: AlarmType.SLEEP,
+            repeatDays: alarmData.selectedDays,
+        });
 
         try {
             if (editingAlarmId) {
-                await updateAlarm(editingAlarmId, {
+                const updates: Partial<SleepAlarmPayload> = {
                     type: AlarmType.SLEEP,
                     label: labelToUse,
                     bedtime: alarmData.bedtime,
@@ -40,9 +43,10 @@ export default function AlarmClockPage() {
                     repeatDays: alarmData.selectedDays,
                     goalMinutes: alarmData.goalMinutes,
                     isEnabled: true,
-                } as any);
+                };
+                await updateAlarm(editingAlarmId, updates);
             } else {
-                await addAlarm({
+                const payload: SleepAlarmPayload = {
                     type: AlarmType.SLEEP,
                     label: labelToUse,
                     bedtime: alarmData.bedtime,
@@ -54,7 +58,8 @@ export default function AlarmClockPage() {
                     snoozeEnabled: false,
                     snoozeDuration: 5,
                     maxSnoozeCount: 0,
-                } as any);
+                };
+                await addAlarm(payload);
             }
         } catch (error) {
             console.error('Failed to save sleep alarm', error);

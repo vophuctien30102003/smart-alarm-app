@@ -1,7 +1,8 @@
 import { Text } from '@/components/ui';
 import { useMapboxSearch } from '@/hooks/useMapboxSearch';
 import { type LocationAlarm, isLocationAlarm } from '@/shared/types/alarm.type';
-import { LocationType, enumToLegacyRepeat } from '@/shared/types/alarmLocation.type';
+import { LocationType } from '@/shared/types/alarmLocation.type';
+import { enumToLegacyRepeat } from '@/shared/utils/alarmOptions';
 import { calculateDistance } from '@/shared/utils/locationUtils';
 import { selectAlarms, useAlarmStore } from '@/store/alarmStore';
 import { useLocationStore } from '@/store/locationStore';
@@ -10,11 +11,11 @@ import { Ionicons } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
-  SafeAreaView,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    SafeAreaView,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -132,7 +133,7 @@ const SearchLocationBottomSheet: React.FC<SearchLocationBottomSheetProps> = ({ c
         >
           <SafeAreaView className="flex-1 bg-[#090212]">
             <View className="flex-row items-center px-4 pt-4 pb-8">
-              <View className="flex-1 flex-row items-center bg-[rgba(20, 30, 48, 0.25)] rounded-full h-16 px-4">
+              <View className="flex-1 flex-row items-center bg-[#362e4b] rounded-2xl  h-16 px-4">
                 <Ionicons name="search" size={20} color="#D9D9D9" style={{ marginRight: 8 }} />
                 <TextInput
                   className="flex-1 text-[#D9D9D9] text-base h-11"
@@ -188,7 +189,7 @@ const SearchLocationBottomSheet: React.FC<SearchLocationBottomSheetProps> = ({ c
                   {recentAlarms.map(alarm => (
                     <TouchableOpacity
                       key={alarm.id}
-                      className="bg-white/10 p-4 rounded-2xl mb-2"
+                      className="bg-[#362e4b] p-4 rounded-2xl mb-2"
                       onPress={() => handleRecentAlarmSelect(alarm)}
                     >
                       <View className="flex-row justify-between items-start">

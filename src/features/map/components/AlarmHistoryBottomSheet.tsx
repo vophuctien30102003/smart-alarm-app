@@ -1,18 +1,18 @@
 import { useAlarms } from '@/hooks/useAlarms';
 import { type LocationAlarm, isLocationAlarm } from '@/shared/types/alarm.type';
-import { enumToLegacyRepeat } from '@/shared/types/alarmLocation.type';
+import { enumToLegacyRepeat } from '@/shared/utils/alarmOptions';
 import { selectAlarms, useAlarmStore } from '@/store/alarmStore';
 import { mapAlarmActions, useMapAlarmStore } from '@/store/mapAlarmStore';
 import { Ionicons } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import React from 'react';
 import {
-  Alert,
-  SafeAreaView,
-  Switch,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    SafeAreaView,
+    Switch,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 

@@ -81,7 +81,7 @@ export const createLocationTracker = (service: LocationServiceLike = defaultServ
         return null;
       }
 
-      const averageSpeedMetersPerMinute = 83.33; // ~5 km/h walking speed
+      const averageSpeedMetersPerMinute = 83.33;
       const minutesUntilArrival = distanceMeters / averageSpeedMetersPerMinute;
 
       return new Date(Date.now() + minutesUntilArrival * 60 * 1000);

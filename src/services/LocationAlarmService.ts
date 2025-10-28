@@ -4,9 +4,6 @@ import type { LocationAlarmStatus } from '@/shared/types/locationTracking.type';
 import { calculateDistance } from '@/shared/utils';
 import * as Location from 'expo-location';
 import notificationManager from './NotificationManager';
-// TODO: Migrate to shared utilities
-// import { LocationPermissionManager } from '@/shared/utils/locationPermissions';
-// import { ALARM_CONSTANTS } from '@/shared/constants';
 
 class LocationAlarmService {
   private static instance: LocationAlarmService;
@@ -40,7 +37,6 @@ class LocationAlarmService {
     if (this.isTracking) return;
 
     try {
-      // TODO: Replace with LocationPermissionManager.requestLocationPermissions()
       const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
       if (foregroundStatus !== 'granted') {
         throw new Error('Foreground location permission not granted');
@@ -51,18 +47,16 @@ class LocationAlarmService {
         console.warn('⚠️ LocationAlarmService: Background permission not granted. Limited functionality.');
       }
 
-      // TODO: Replace with LocationPermissionManager.getLocationWatchOptions()
       this.locationSubscription = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.High,
-          timeInterval: 10000, // TODO: Use ALARM_CONSTANTS.LOCATION_UPDATE_INTERVAL
-          distanceInterval: 50, // TODO: Use ALARM_CONSTANTS.LOCATION_DISTANCE_INTERVAL
+          timeInterval: 10000,
+          distanceInterval: 50,
         },
         this.handleLocationUpdate.bind(this)
       );
 
       this.isTracking = true;
-      console.log('✅ LocationAlarmService: Location tracking started');
     } catch (error) {
       console.error('❌ LocationAlarmService: Failed to start tracking:', error);
       throw error;
@@ -96,8 +90,6 @@ class LocationAlarmService {
       isInRange: false,
       distance: Infinity,
     });
-
-    console.log(`Added location alarm: ${alarm.label} for location ${alarm.targetLocation.address}`);
   }
 
   async removeLocationAlarm(alarmId: string): Promise<void> {
@@ -115,7 +107,6 @@ class LocationAlarmService {
 
     const incomingIds = new Set(enabledAlarms.map(alarm => alarm.id));
 
-    // Remove alarms that are no longer active
     for (const existingId of Array.from(this.activeLocationAlarms.keys())) {
       if (!incomingIds.has(existingId)) {
         this.activeLocationAlarms.delete(existingId);
@@ -123,12 +114,10 @@ class LocationAlarmService {
       }
     }
 
-    // Add or update active alarms
     enabledAlarms.forEach((alarm) => {
       this.addLocationAlarm(alarm);
     });
 
-    // Drop triggered flags for alarms that are no longer active
     this.triggeredAlarms.forEach((id) => {
       if (!incomingIds.has(id)) {
         this.triggeredAlarms.delete(id);
@@ -140,9 +129,6 @@ class LocationAlarmService {
       void this.stopLocationTracking();
       return;
     }
-
-    console.log(`Updated location alarms. Active count: ${this.activeLocationAlarms.size}`);
-
     if (!this.isTracking) {
       await this.startLocationTracking();
     }
@@ -218,8 +204,6 @@ class LocationAlarmService {
       this.onAlarmComplete?.(alarm);
     }
 
-    // LocationAlarms don't have deleteAfterNotification property
-    // They are managed differently than time-based alarms
   }
 
   // TODO: derive accurate arrival estimate once travel mode is known

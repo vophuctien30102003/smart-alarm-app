@@ -1,4 +1,5 @@
 import { AlarmRepeatType, AlarmType, WeekDay } from '../enums';
+import type { AlarmPayload } from './alarmPayload';
 import type { LocationAlarmStatus } from './locationTracking.type';
 import { AlarmSound } from './sound.type';
 
@@ -80,8 +81,8 @@ export interface AlarmState {
 }
 
 export interface AlarmActions {
-  addAlarm: (alarm: Omit<Alarm, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
-  updateAlarm: (id: string, updates: Partial<Alarm>) => Promise<void>;
+  addAlarm: (alarm: AlarmPayload) => Promise<void>;
+  updateAlarm: (id: string, updates: Partial<AlarmPayload>) => Promise<void>;
   deleteAlarm: (id: string) => Promise<void>;
   toggleAlarm: (id: string) => Promise<void>;
 

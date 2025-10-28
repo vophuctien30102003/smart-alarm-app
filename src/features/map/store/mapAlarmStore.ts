@@ -2,14 +2,9 @@ import { convertSoundToAlarmSound } from '@/shared/constants/sounds';
 import { AlarmRepeatType, AlarmType } from '@/shared/enums';
 import type { LocationAlarm } from '@/shared/types/alarm.type';
 import { isLocationAlarm } from '@/shared/types/alarm.type';
-import {
-    enumToLegacyRepeat,
-    legacyRepeatToEnum,
-    type LocationAlarmType,
-    type LocationRepeatOption,
-    type LocationType,
-    type ViewMode,
-} from '@/shared/types/alarmLocation.type';
+import type { LocationAlarmType, LocationRepeatOption, LocationType, ViewMode } from '@/shared/types/alarmLocation.type';
+import type { LocationAlarmPayload } from '@/shared/types/alarmPayload';
+import { enumToLegacyRepeat, legacyRepeatToEnum } from '@/shared/utils/alarmOptions';
 import { resolveSound } from '@/shared/utils/soundUtils';
 import { useAlarmStore } from '@/store/alarmStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -202,7 +197,7 @@ export const migrateLegacyLocationAlarms = async () => {
         continue;
       }
 
-      const payload: Omit<LocationAlarm, 'id' | 'createdAt' | 'updatedAt'> = {
+      const payload: LocationAlarmPayload = {
         type: AlarmType.LOCATION,
         label: alarm.label,
         isEnabled: alarm.isEnabled,

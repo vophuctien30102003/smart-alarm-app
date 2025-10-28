@@ -1,7 +1,7 @@
 import { AlarmRepeatType } from '@/shared/enums';
 import { LocationAlarm } from '@/shared/types/alarm.type';
 import type { LocationAlarmStatus } from '@/shared/types/locationTracking.type';
-import { calculateDistance } from '@/shared/utils';
+import { calculateDistance } from '@/shared/utils/locationUtils';
 import * as Location from 'expo-location';
 import notificationManager from './NotificationManager';
 

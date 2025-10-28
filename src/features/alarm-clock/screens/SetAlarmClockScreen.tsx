@@ -8,7 +8,7 @@ import { Back } from 'iconsax-react-native';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { CustomAlarmClock } from '../components/CustomAlarmClock';
-import { useSleepAlarmForm } from '../hooks/useSleepAlarmForm';
+import { useSleepAlarmForm } from '../../../hooks/useSleepAlarmForm';
 
 interface Props {
     onSave: (alarmData: SleepAlarmFormData) => void;

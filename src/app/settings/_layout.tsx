@@ -1,4 +1,4 @@
-import { colors } from "@/shared";
+import { colors } from "@/shared/constants/colors";
 import { Stack } from "expo-router";
 
 export default function SettingsLayout() {

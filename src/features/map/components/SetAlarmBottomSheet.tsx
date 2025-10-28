@@ -4,7 +4,7 @@ import { AlarmType } from '@/shared/enums';
 import { type LocationAlarm, isLocationAlarm } from '@/shared/types/alarm.type';
 import type { LocationRepeatOption } from '@/shared/types/alarmLocation.type';
 import type { LocationAlarmPayload } from '@/shared/types/alarmPayload';
-import { calculateDistance } from '@/shared/utils';
+import { calculateDistance } from '@/shared/utils/locationUtils';
 import { formatAlarmLabel } from '@/shared/utils/alarmFormatters';
 import { LOCATION_REPEAT_OPTIONS, enumToLegacyRepeat, legacyRepeatToEnum } from '@/shared/utils/alarmOptions';
 import { getAllSounds, resolveSound, resolveSoundId } from '@/shared/utils/soundUtils';

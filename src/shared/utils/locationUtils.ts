@@ -33,18 +33,3 @@ export function calculateDistance(coord1: Coordinates, coord2: Coordinates): num
 export function calculateDistanceInMeters(coord1: Coordinates, coord2: Coordinates): number {
   return calculateDistance(coord1, coord2) * 1000;
 }
-
-/**
- * Legacy function for backward compatibility
- */
-export function calculateDistanceLegacy(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number
-): number {
-  return calculateDistance(
-    { latitude: lat1, longitude: lon1 },
-    { latitude: lat2, longitude: lon2 }
-  );
-}

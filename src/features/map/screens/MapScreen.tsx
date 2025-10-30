@@ -83,7 +83,6 @@ const MapScreen = () => {
       });
     } catch (error) {
       console.error('Error requesting location permission:', error);
-      Alert.alert('Error', 'Could not access location services');
     }
   };
 

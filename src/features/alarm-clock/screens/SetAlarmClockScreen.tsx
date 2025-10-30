@@ -1,5 +1,5 @@
 import { Text } from '@/components/ui/text';
-import { DEFAULT_ALARM_SOUNDS } from '@/shared/constants';
+import { getDefaultAlarmSounds } from '@/shared/constants';
 import { WeekDay } from '@/shared/enums';
 import type { SleepAlarmFormData } from '@/shared/types/sleepAlarmForm.type';
 import { formatTime, timeStringToDate } from '@/shared/utils/timeUtils';
@@ -7,8 +7,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Back } from 'iconsax-react-native';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import { CustomAlarmClock } from '../components/CustomAlarmClock';
 import { useSleepAlarmForm } from '../../../hooks/useSleepAlarmForm';
+import { CustomAlarmClock } from '../components/CustomAlarmClock';
 
 interface Props {
     onSave: (alarmData: SleepAlarmFormData) => void;
@@ -205,7 +205,7 @@ export default function SetAlarmScreen({ onSave, onBack, initialData }: Props) {
                     volume={volume}
                     onChangeVolume={actions.setVolume}
                     soundId={soundId}
-                    soundOptions={DEFAULT_ALARM_SOUNDS.map(sound => ({ id: sound.id, title: sound.title }))}
+                    soundOptions={getDefaultAlarmSounds().map(sound => ({ id: sound.id, title: sound.name }))}
                     onSelectSound={actions.setSoundId}
                     vibrate={vibrate}
                     onToggleVibrate={actions.setVibrate}

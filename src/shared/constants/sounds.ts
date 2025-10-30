@@ -1,2 +1,2 @@
-export { convertSoundToAlarmSound, DEFAULT_ALARM_SOUNDS, getDefaultAlarmSound } from '../utils/alarmOptions';
+export { convertSoundToAlarmSound, getDefaultAlarmSound, getDefaultAlarmSounds } from '../utils/alarmOptions';
 

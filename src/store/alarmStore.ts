@@ -1,7 +1,6 @@
 import { AlarmRepeatType, AlarmType } from '@/shared/enums';
 import type { AlarmPayload } from '@/shared/types/alarmPayload';
-import { formatAlarmLabel } from '@/shared/utils/alarmFormatters';
-import { ensureValidAlarmPayload } from '@/shared/utils/alarmValidation';
+import { ensureValidAlarmPayload, formatAlarmLabel } from '@/shared/utils/alarmUtils';
 import { createLocationTracker } from '@/store/modules/locationTracker';
 import { cancelSleepNotifications, getNextSleepEventDate, scheduleSleepNotifications } from '@/store/modules/sleepScheduler';
 import { clearSnoozeTimeout, scheduleSnoozeTimeout } from '@/store/modules/snoozeManager';
@@ -10,14 +9,14 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import notificationManager from '../services/NotificationManager';
 import {
-  Alarm,
-  AlarmStore,
-  isLocationAlarm,
-  isSleepAlarm,
-  isTimeAlarm,
-  LocationAlarm,
-  LocationTarget,
-  SleepAlarm,
+    Alarm,
+    AlarmStore,
+    isLocationAlarm,
+    isSleepAlarm,
+    isTimeAlarm,
+    LocationAlarm,
+    LocationTarget,
+    SleepAlarm,
 } from '../shared/types/alarm.type';
 import type { LocationAlarmStatus } from '../shared/types/locationTracking.type';
 import { generateTimestampId } from '../shared/utils/idUtils';

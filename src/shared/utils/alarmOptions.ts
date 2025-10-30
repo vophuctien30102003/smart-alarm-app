@@ -45,4 +45,14 @@ export const getDefaultAlarmSound = (): AlarmSound => {
   return convertSoundToAlarmSound(defaultSound);
 };
 
-export const DEFAULT_ALARM_SOUNDS = getAllSounds();
+// Lazy load sounds to avoid calling getAllSounds on import
+let cachedAlarmSounds: AlarmSound[] | null = null;
+
+export const getDefaultAlarmSounds = (): AlarmSound[] => {
+  if (cachedAlarmSounds) {
+    return cachedAlarmSounds;
+  }
+
+  cachedAlarmSounds = getAllSounds().map(convertSoundToAlarmSound);
+  return cachedAlarmSounds;
+};

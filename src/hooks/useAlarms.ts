@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { isLocationAlarm, isSleepAlarm, isTimeAlarm } from '../shared/types/alarm.type';
+import { sortAlarms, validateAlarmData, validateAlarmLabel, validateAlarmTime } from '../shared/utils/alarmUtils';
 import { selectAlarms, useAlarmStore } from '../store/alarmStore';
 
 export const useAlarms = () => {
@@ -45,35 +45,7 @@ export const useAlarms = () => {
     }
   }, [_toggleAlarm]);
 
-  const sortedAlarms = useMemo(() => {
-    const getPriority = (alarm: typeof alarms[number]) => {
-      if (isTimeAlarm(alarm)) return 0;
-      if (isSleepAlarm(alarm)) return 1;
-      if (isLocationAlarm(alarm)) return 2;
-      return 3;
-    };
-
-    return [...alarms].sort((a, b) => {
-      const priorityDiff = getPriority(a) - getPriority(b);
-      if (priorityDiff !== 0) {
-        return priorityDiff;
-      }
-
-      if (isTimeAlarm(a) && isTimeAlarm(b)) {
-        return a.time.localeCompare(b.time);
-      }
-
-      if (isSleepAlarm(a) && isSleepAlarm(b)) {
-        return a.bedtime.localeCompare(b.bedtime);
-      }
-
-      if (isLocationAlarm(a) && isLocationAlarm(b)) {
-        return a.label.localeCompare(b.label);
-      }
-
-      return 0;
-    });
-  }, [alarms]);
+  const sortedAlarms = useMemo(() => sortAlarms(alarms), [alarms]);
 
   return {
     alarms: sortedAlarms,
@@ -99,16 +71,6 @@ export const useActiveAlarm = () => {
     snoozeCount,
     stopAlarm,
     snoozeAlarm,
-  };
-};
-
-export const useAlarmNotifications = () => {
-  const scheduleNotifications = useAlarmStore(state => state.scheduleNotifications);
-  const cancelNotifications = useAlarmStore(state => state.cancelNotifications);
-
-  return {
-    scheduleNotifications,
-    cancelNotifications,
   };
 };
 
@@ -142,70 +104,9 @@ export const useNextAlarm = () => {
 };
 
 export const useAlarmValidation = () => {
-  const validateAlarmTime = useCallback((time: string): boolean => {
-    const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
-    return timeRegex.test(time);
-  }, []);
-
-  const validateAlarmLabel = useCallback((label: string): boolean => {
-    return label.trim().length > 0 && label.trim().length <= 50;
-  }, []);
-
-  const validateAlarmData = useCallback((alarm: {
-    time: string;
-    label: string;
-    volume?: number;
-    snoozeDuration?: number;
-  }): { isValid: boolean; errors: string[] } => {
-    const errors: string[] = [];
-
-    if (!validateAlarmTime(alarm.time)) {
-      errors.push('Invalid time format');
-    }
-
-    if (!validateAlarmLabel(alarm.label)) {
-      errors.push('Label must be 1-50 characters long');
-    }
-
-    if (alarm.volume !== undefined && (alarm.volume < 0 || alarm.volume > 1)) {
-      errors.push('Volume must be between 0 and 1');
-    }
-
-    if (alarm.snoozeDuration !== undefined && alarm.snoozeDuration < 1) {
-      errors.push('Snooze duration must be at least 1 minute');
-    }
-
-    return {
-      isValid: errors.length === 0,
-      errors
-    };
-  }, [validateAlarmTime, validateAlarmLabel]);
-
   return {
     validateAlarmTime,
     validateAlarmLabel,
     validateAlarmData,
   };
-};
-
-export const useAlarmStats = () => {
-  const alarms = useAlarmStore(state => state.alarms);
-
-  const stats = useMemo(() => {
-    const totalAlarms = alarms.length;
-    const enabledAlarms = alarms.filter(alarm => alarm.isEnabled).length;
-    const disabledAlarms = totalAlarms - enabledAlarms;
-    const locationBasedAlarms = alarms.filter(alarm => isLocationAlarm(alarm)).length;
-    const timeBasedAlarms = totalAlarms - locationBasedAlarms;
-
-    return {
-      totalAlarms,
-      enabledAlarms,
-      disabledAlarms,
-      locationBasedAlarms,
-      timeBasedAlarms,
-    };
-  }, [alarms]);
-
-  return stats;
 };

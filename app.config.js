@@ -65,6 +65,7 @@ export default {
           icon: "./src/assets/images/icon.png",
           color: "#ffffff",
           sounds: ["./src/assets/sound/ringtone.mp3"],
+          googleServicesFile: "./google-services.json",
         },
       ],
       [

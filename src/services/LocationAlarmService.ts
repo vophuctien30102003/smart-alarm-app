@@ -73,7 +73,6 @@ class LocationAlarmService {
     }
     this.isTracking = false;
     this.activeLocationAlarms.clear();
-    console.log('Location tracking stopped');
   }
 
   addLocationAlarm(alarm: LocationAlarm): void {
@@ -125,7 +124,6 @@ class LocationAlarmService {
     });
 
     if (this.activeLocationAlarms.size === 0) {
-      console.log('No location alarms to track');
       void this.stopLocationTracking();
       return;
     }

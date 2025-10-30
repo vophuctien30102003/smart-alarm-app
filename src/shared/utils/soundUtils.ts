@@ -14,13 +14,22 @@ const createDisplayName = (filename: string): string => {
         .join(' ');
 };
 
+// Cache for sounds array to avoid recreating on each call
+let soundsCache: Sound[] | null = null;
+
 export const getAllSounds = (): Sound[] => {
-    return Object.keys(soundAssets).map((filename, index) => ({
+    if (soundsCache) {
+        return soundsCache;
+    }
+
+    soundsCache = Object.keys(soundAssets).map((filename, index) => ({
         id: `sound_${index}`,
         title: createDisplayName(filename),
         uri: soundAssets[filename as keyof typeof soundAssets],
         filename,
     }));
+
+    return soundsCache;
 };
 
 export const getDefaultSound = (): Sound => {

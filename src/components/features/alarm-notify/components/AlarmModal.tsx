@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Text } from "@/components/ui/text";
 import { Modal, View } from "react-native";
-import { useAlarmOverlay } from "../../../hooks/useAlarmOverlay";
+import { useAlarmOverlay } from "@/hooks/useAlarmOverlay";
 import { AlarmPlayer } from "./AlarmPlayer";
 
 export function AlarmModal() {

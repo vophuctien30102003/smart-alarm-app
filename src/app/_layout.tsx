@@ -1,7 +1,7 @@
 import TabNavigation from "@/components/navigation/TabNavigation";
 import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import { NotificationProvider } from "@/contexts/NotificationProvider";
-import { AlarmModal } from "@/features/alarm-notify/components/AlarmModal";
+import { AlarmModal } from "@/components/features/alarm-notify/components/AlarmModal";
 import { Stack } from "expo-router";
 import { memo } from "react";
 import { View } from "react-native";

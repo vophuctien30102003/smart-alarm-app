@@ -1,6 +1,6 @@
-import { AlarmTabContent } from '@/features/alarm-clock/components/AlarmTabContent';
-import HeaderTabs from '@/features/alarm-clock/components/HeaderTabClock';
-import SetAlarmScreen from '@/features/alarm-clock/screens/SetAlarmClockScreen';
+import { AlarmTabContent } from '@/components/features/alarm-clock/components/AlarmTabContent';
+import HeaderTabs from '@/components/features/alarm-clock/components/HeaderTabClock';
+import SetAlarmScreen from '@/components/features/alarm-clock/screens/SetAlarmClockScreen';
 import { useSleepAlarmManagement } from '@/hooks/useSleepAlarmManagement';
 import { useSleepGoal } from '@/hooks/useSleepGoal';
 import { LinearGradient } from 'expo-linear-gradient';

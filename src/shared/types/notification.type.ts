@@ -1,6 +1,3 @@
-/**
- * Base notification interface for all notification types
- */
 export interface BaseNotification {
   id: string;
   title: string;
@@ -12,9 +9,6 @@ export interface BaseNotification {
   };
 }
 
-/**
- * Enhanced notification with additional properties
- */
 export interface EnhancedNotification extends BaseNotification {
   sound?: boolean;
   vibrate?: boolean;
@@ -22,22 +16,17 @@ export interface EnhancedNotification extends BaseNotification {
   isTriggered?: boolean;
 }
 
-/**
- * Alarm-specific notification data
- */
 export interface AlarmNotificationData {
   alarmId: string;
   alarmType: 'time' | 'location';
   alarmLabel: string;
 }
-
-
 export interface AlarmHistory {
   id: string;
   alarmId: string;
   alarmLabel: string;
   triggeredAt: Date;
-  duration?: number; // how long the alarm played in seconds
+  duration?: number;
   action: 'stopped' | 'snoozed' | 'dismissed';
   location?: {
     latitude: number;

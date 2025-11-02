@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Back } from 'iconsax-react-native';
 import { ScrollView, TouchableOpacity, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import { useSleepAlarmForm } from '../../../hooks/useSleepAlarmForm';
+import { useSleepAlarmForm } from '@/hooks/useSleepAlarmForm';
 import { CustomAlarmClock } from '../components/CustomAlarmClock';
 
 interface Props {

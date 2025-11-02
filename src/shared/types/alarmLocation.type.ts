@@ -9,6 +9,10 @@ export type LocationType = LocationTarget & {
   isFavorite?: boolean;
   type?: 'home' | 'work' | 'other';
 };
+export type Coordinates = {
+  latitude: number;
+  longitude: number;
+}
 
 export type ViewMode = 'search' | 'setAlarm' | 'history';
 export interface BaseLocationAlarm {
@@ -31,10 +35,7 @@ export interface LocationAlarmType extends BaseLocationAlarm {
 
 export interface LocationAlarmHistoryType extends BaseLocationAlarm {
   distance: number;
-  coordinates: {
-    latitude: number;
-    longitude: number;
-  };
+  coordinates: Coordinates
 }
 export interface MapAlarmConfigType {
   lineName: string;

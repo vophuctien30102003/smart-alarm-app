@@ -3,7 +3,6 @@ import type { AlarmPayload } from './alarmPayload';
 import type { LocationAlarmStatus } from './locationTracking.type';
 import { AlarmSound } from './sound.type';
 
-// Location related types
 export interface LocationTarget {
   id: string;
   name: string;
@@ -16,7 +15,6 @@ export interface LocationTarget {
   type?: 'home' | 'work' | 'other';
 }
 
-// Base alarm interface - all alarms have these properties
 export interface BaseAlarm {
   id: string;
   label: string;
@@ -34,37 +32,33 @@ export interface BaseAlarm {
 
 export interface TimeAlarm extends BaseAlarm {
   type: AlarmType.TIME;
-  time: string; // HH:mm format
+  time: string;
   repeatDays: WeekDay[];
   deleteAfterNotification: boolean;
 }
 
-// Location-based alarm
 export interface LocationAlarm extends BaseAlarm {
   type: AlarmType.LOCATION;
   targetLocation: LocationTarget;
   radiusMeters: number;
-  timeBeforeArrival?: number; // minutes before arrival
+  timeBeforeArrival?: number;
   arrivalTrigger?: boolean;
   repeatType: AlarmRepeatType;
 }
 
-// Sleep alarm combines bedtime and wake-up notifications
 export interface SleepAlarm extends BaseAlarm {
   type: AlarmType.SLEEP;
-  bedtime: string; // HH:mm format
-  wakeUpTime: string; // HH:mm format
+  bedtime: string;
+  wakeUpTime: string;
   repeatDays: WeekDay[];
   goalMinutes?: number;
   bedtimeNotificationIds?: string[];
   wakeNotificationIds?: string[];
-  gentleWakeMinutes?: number; // minutes to ramp volume
+  gentleWakeMinutes?: number;
 }
 
-// Union type for all alarms
 export type Alarm = TimeAlarm | LocationAlarm | SleepAlarm;
 
-// Alarm notification
 export interface AlarmNotification {
   id: string;
   alarmId: string;
@@ -85,19 +79,15 @@ export interface AlarmActions {
   updateAlarm: (id: string, updates: Partial<AlarmPayload>) => Promise<void>;
   deleteAlarm: (id: string) => Promise<void>;
   toggleAlarm: (id: string) => Promise<void>;
-
   triggerAlarm: (alarm: Alarm) => void;
   stopAlarm: () => void;
   snoozeAlarm: () => void;
-
   setupAlarmTracking: (alarm: Alarm) => Promise<void>;
   cleanupAlarmTracking: (alarm: Alarm) => Promise<void>;
   scheduleNotifications: (alarm: Alarm) => Promise<void>;
   cancelNotifications: (alarmId: string) => Promise<void>;
-
   getNextAlarmTime: (alarm: Alarm) => Date | null;
   isAlarmActive: (alarm: Alarm) => boolean;
-
   startLocationTracking: () => Promise<void>;
   stopLocationTracking: () => Promise<void>;
   updateLocationAlarms: () => Promise<void>;
@@ -106,19 +96,15 @@ export interface AlarmActions {
 
 export type AlarmStore = AlarmState & AlarmActions;
 
-// Type guards
 export const isTimeAlarm = (alarm: Alarm): alarm is TimeAlarm => {
   return alarm.type === AlarmType.TIME;
 };
-
 export const isLocationAlarm = (alarm: Alarm): alarm is LocationAlarm => {
   return alarm.type === AlarmType.LOCATION;
 };
-
 export const isSleepAlarm = (alarm: Alarm): alarm is SleepAlarm => {
   return alarm.type === AlarmType.SLEEP;
 };
-
 export interface LegacyMapAlarm {
   id: string;
   name: string;

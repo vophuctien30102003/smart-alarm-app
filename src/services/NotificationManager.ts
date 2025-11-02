@@ -1,17 +1,10 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
-import { WeekDay } from "../shared/enums";
-import {
-    LocationAlarm,
-    SleepAlarm,
-    TimeAlarm,
-} from "../shared/types/alarm.type";
-import {
-    formatDurationFromMinutes,
-    getMinutesBetweenTimes,
-    parseTimeString,
-} from "../shared/utils/timeUtils";
-import AlarmManager from "react-native-alarm-manager";
+import { NotificationChannels } from "../shared/helpers/NotificationChannels";
+import { LocationAlarm, SleepAlarm, TimeAlarm } from "../shared/types/alarm.type";
+import { LocationAlarmScheduler } from "./schedulers/LocationAlarmScheduler";
+import { SleepAlarmScheduler } from "./schedulers/SleepAlarmScheduler";
+import { TimeAlarmScheduler } from "./schedulers/TimeAlarmScheduler";
 
 Notifications.setNotificationHandler({
     handleNotification: async () => {
@@ -33,17 +26,21 @@ Notifications.setNotificationHandler({
     },
 });
 
-const ALARM_CHANNEL_ID = "alarms";
-const LOCATION_ALARM_CHANNEL_ID = "location-alarms";
-const NOTIFICATION_VIBRATION_PATTERN = [0, 250, 250, 250];
-
 export class NotificationManager {
     private static instance: NotificationManager;
     private expoPushToken: string | null = null;
     private isInitialized: boolean = false;
     private initializationPromise: Promise<boolean> | null = null;
 
-    private constructor() {}
+    private timeAlarmScheduler: TimeAlarmScheduler;
+    private sleepAlarmScheduler: SleepAlarmScheduler;
+    private locationAlarmScheduler: LocationAlarmScheduler;
+
+    private constructor() {
+        this.timeAlarmScheduler = new TimeAlarmScheduler();
+        this.sleepAlarmScheduler = new SleepAlarmScheduler();
+        this.locationAlarmScheduler = new LocationAlarmScheduler();
+    }
 
     static getInstance(): NotificationManager {
         if (!NotificationManager.instance) {
@@ -61,127 +58,30 @@ export class NotificationManager {
             return this.initializationPromise;
         }
 
+        this.initializationPromise = this.setupNotificationChannels()
+            .then(() => {
+                console.log("✅ NotificationManager initialized successfully");
+                this.isInitialized = true;
+                return true;
+            })
+            .catch((error) => {
+                console.error("❌ Failed to initialize NotificationManager:", error);
+                this.isInitialized = false;
+                return false;
+            });
+
         const result = await this.initializationPromise;
         this.isInitialized = result;
         return result;
     }
-
     private async setupNotificationChannels(): Promise<void> {
-        if (Platform.OS === "android") {
-            await Notifications.setNotificationChannelAsync(ALARM_CHANNEL_ID, {
-                name: "Alarm Notifications",
-                importance: Notifications.AndroidImportance.MAX,
-                vibrationPattern: NOTIFICATION_VIBRATION_PATTERN,
-                lightColor: "#FF231F7C",
-                sound: "default",
-                enableVibrate: true,
-                bypassDnd: true,
-            });
-
-            await Notifications.setNotificationChannelAsync(
-                LOCATION_ALARM_CHANNEL_ID,
-                {
-                    name: "Location Alarm Notifications",
-                    importance: Notifications.AndroidImportance.HIGH,
-                    vibrationPattern: NOTIFICATION_VIBRATION_PATTERN,
-                    lightColor: "#FF6B35",
-                    sound: "default",
-                    enableVibrate: true,
-                }
-            );
-        }
+        await NotificationChannels.setup();
     }
-
-    // async scheduleAlarmNotification(alarm: TimeAlarm): Promise<string | null> {
-    //   try {
-    //     await this.initialize();
-
-    //     const triggerDate = this.calculateNextTriggerDate(alarm);
-
-    //     if (!triggerDate) {
-    //       console.warn('Could not calculate trigger date for alarm:', alarm.id);
-    //       return null;
-    //     }
-
-    //     const notificationId = await Notifications.scheduleNotificationAsync({
-    //       content: {
-    //         title: '⏰ Alarm',
-    //         body: alarm.label || 'Wake up!',
-    //         sound: true,
-    //         priority: Notifications.AndroidNotificationPriority.MAX,
-    //         data: {
-    //           alarmId: alarm.id,
-    //           alarmLabel: alarm.label,
-    //           alarmTime: alarm.time,
-    //           type: 'alarm',
-    //         },
-    //       },
-    //       trigger: {
-    //         date: triggerDate,
-    //         channelId: ALARM_CHANNEL_ID,
-    //       },
-    //     });
-
-    //     console.log(`📅 Scheduled alarm notification for ${triggerDate.toLocaleString()}`);
-    //     return notificationId;
-    //   } catch (error) {
-    //     console.error('❌ Error scheduling notification:', error);
-    //     return null;
-    //   }
-    // }
-
     async scheduleAlarmNotification(alarm: TimeAlarm): Promise<string | null> {
         try {
             await this.initialize();
-
-            const triggerDate = this.calculateNextTriggerDate(alarm);
-            if (!triggerDate) return null;
-
-            if (Platform.OS === "android") {
-                const alarmTime = `${triggerDate.getFullYear()}-${String(
-                    triggerDate.getMonth() + 1
-                ).padStart(2, "0")}-${String(triggerDate.getDate()).padStart(
-                    2,
-                    "0"
-                )} ${String(triggerDate.getHours()).padStart(2, "0")}:${String(
-                    triggerDate.getMinutes()
-                ).padStart(2, "0")}:00`;
-
-                AlarmManager.schedule(
-                    {
-                        alarm_time: alarmTime,
-                        alarm_title: "⏰ Alarm",
-                        alarm_text: alarm.label || "Wake up!",
-                        alarm_sound: "default",
-                        alarm_icon: "ic_launcher",
-                        alarm_sound_loop: true,
-                        alarm_vibration: true,
-                        alarm_noti_removable: false,
-                        alarm_activate: true,
-                    },
-                    (msg) => console.log("✅ Alarm scheduled:", msg),
-                    (err) => console.error("❌ Failed to schedule:", err)
-                );
-            } else {
-                // iOS vẫn dùng expo-notifications
-                await Notifications.scheduleNotificationAsync({
-                    content: {
-                        title: "⏰ Alarm",
-                        body: alarm.label || "Wake up!",
-                        sound: true,
-                        priority: Notifications.AndroidNotificationPriority.MAX,
-                    },
-                    trigger: {
-                        date: triggerDate,
-                        channelId: ALARM_CHANNEL_ID,
-                    },
-                });
-            }
-
-            console.log(
-                `📅 Scheduled alarm for ${triggerDate.toLocaleString()}`
-            );
-            return alarm.id;
+            const result = await this.timeAlarmScheduler.schedule(alarm);
+            return result.notificationIds?.[0] || null;
         } catch (error) {
             console.error("❌ Error scheduling alarm:", error);
             return null;
@@ -192,296 +92,31 @@ export class NotificationManager {
         bedtimeIds: string[];
         wakeIds: string[];
     }> {
-        const bedtimeIds: string[] = [];
-        const wakeIds: string[] = [];
-
         try {
             await this.initialize();
-
-            const sleepMinutes = getMinutesBetweenTimes(
-                alarm.bedtime,
-                alarm.wakeUpTime
-            );
-            const sleepDurationDisplay =
-                formatDurationFromMinutes(sleepMinutes);
-
-            const bedtimeContent = {
-                title: "🛌 Bedtime Alarm",
-                body: `It's time for bed. Sleep schedule: ${sleepDurationDisplay} hours.`,
+            const result = await this.sleepAlarmScheduler.schedule(alarm);
+            return {
+                bedtimeIds: result.bedtimeIds || [],
+                wakeIds: result.wakeIds || [],
             };
-
-            const wakeContent = {
-                title: "☀️ Wake Up Alarm",
-                body: "It's time to wake up. Have a great day!",
-            };
-
-            const bedtimeData = {
-                alarmId: alarm.id,
-                alarmLabel: alarm.label,
-                type: "sleep-alarm",
-                sleepEvent: "bedtime" as const,
-            };
-
-            const wakeData = {
-                alarmId: alarm.id,
-                alarmLabel: alarm.label,
-                type: "sleep-alarm",
-                sleepEvent: "wake" as const,
-            };
-
-            const { hours: bedtimeHour, minutes: bedtimeMinute } =
-                parseTimeString(alarm.bedtime);
-            const { hours: wakeHour, minutes: wakeMinute } = parseTimeString(
-                alarm.wakeUpTime
-            );
-            const bedtimeTotalMinutes = bedtimeHour * 60 + bedtimeMinute;
-            const wakeTotalMinutes = wakeHour * 60 + wakeMinute;
-
-            if (!alarm.repeatDays || alarm.repeatDays.length === 0) {
-                const bedtimeDate = this.getNextDateForTime(alarm.bedtime);
-                const wakeReferenceDate = new Date(bedtimeDate);
-                const wakeDate = this.getNextDateForTime(
-                    alarm.wakeUpTime,
-                    wakeReferenceDate
-                );
-
-                const bedtimeTrigger: Notifications.DateTriggerInput = {
-                    type: Notifications.SchedulableTriggerInputTypes.DATE,
-                    channelId: ALARM_CHANNEL_ID,
-                    date: bedtimeDate,
-                };
-
-                const bedtimeId = await Notifications.scheduleNotificationAsync(
-                    {
-                        content: {
-                            ...bedtimeContent,
-                            sound: true,
-                            priority:
-                                Notifications.AndroidNotificationPriority.MAX,
-                            data: bedtimeData,
-                        },
-                        trigger: bedtimeTrigger,
-                    }
-                );
-                bedtimeIds.push(bedtimeId);
-
-                const wakeTrigger: Notifications.DateTriggerInput = {
-                    type: Notifications.SchedulableTriggerInputTypes.DATE,
-                    channelId: ALARM_CHANNEL_ID,
-                    date: wakeDate,
-                };
-
-                const wakeId = await Notifications.scheduleNotificationAsync({
-                    content: {
-                        ...wakeContent,
-                        sound: true,
-                        priority: Notifications.AndroidNotificationPriority.MAX,
-                        data: wakeData,
-                    },
-                    trigger: wakeTrigger,
-                });
-                wakeIds.push(wakeId);
-            } else {
-                for (const repeatDay of alarm.repeatDays) {
-                    const bedtimeTrigger = this.createWeeklyTrigger(
-                        repeatDay,
-                        bedtimeHour,
-                        bedtimeMinute
-                    );
-
-                    const bedtimeId =
-                        await Notifications.scheduleNotificationAsync({
-                            content: {
-                                ...bedtimeContent,
-                                sound: true,
-                                priority:
-                                    Notifications.AndroidNotificationPriority
-                                        .MAX,
-                                data: bedtimeData,
-                            },
-                            trigger: bedtimeTrigger,
-                        });
-                    bedtimeIds.push(bedtimeId);
-
-                    const wakeDay =
-                        wakeTotalMinutes >= bedtimeTotalMinutes
-                            ? repeatDay
-                            : this.getNextWeekDay(repeatDay);
-
-                    const wakeTrigger = this.createWeeklyTrigger(
-                        wakeDay,
-                        wakeHour,
-                        wakeMinute
-                    );
-
-                    const wakeId =
-                        await Notifications.scheduleNotificationAsync({
-                            content: {
-                                ...wakeContent,
-                                sound: true,
-                                priority:
-                                    Notifications.AndroidNotificationPriority
-                                        .MAX,
-                                data: wakeData,
-                            },
-                            trigger: wakeTrigger,
-                        });
-                    wakeIds.push(wakeId);
-                }
-            }
         } catch (error) {
-            console.error(
-                "❌ Error scheduling sleep alarm notifications:",
-                error
-            );
+            console.error("❌ Error scheduling sleep alarm notifications:", error);
+            return { bedtimeIds: [], wakeIds: [] };
         }
-
-        return { bedtimeIds, wakeIds };
     }
 
     async cancelSleepAlarmNotifications(
         notificationIds: string[]
     ): Promise<void> {
-        const validIds = notificationIds.filter((id): id is string => !!id);
-        if (validIds.length === 0) {
-            return;
-        }
-
-        try {
-            await Promise.all(
-                validIds.map((id) =>
-                    Notifications.cancelScheduledNotificationAsync(id)
-                )
-            );
-        } catch (error) {
-            console.error(
-                "❌ Error cancelling sleep alarm notifications:",
-                error
-            );
-        }
+        await this.sleepAlarmScheduler.cancel?.(notificationIds);
     }
-
-    private getNextDateForTime(
-        time: string,
-        reference: Date = new Date()
-    ): Date {
-        const { hours, minutes } = parseTimeString(time);
-        const candidate = new Date(reference);
-        candidate.setHours(hours, minutes, 0, 0);
-
-        if (candidate <= reference) {
-            candidate.setDate(candidate.getDate() + 1);
-        }
-
-        return candidate;
-    }
-
-    private createWeeklyTrigger(
-        day: WeekDay,
-        hour: number,
-        minute: number
-    ): Notifications.WeeklyTriggerInput {
-        return {
-            type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
-            channelId: ALARM_CHANNEL_ID,
-            weekday: this.mapWeekDayToCalendar(day),
-            hour,
-            minute,
-        };
-    }
-
-    private mapWeekDayToCalendar(day: WeekDay): number {
-        switch (day) {
-            case WeekDay.SUNDAY:
-                return 1;
-            case WeekDay.MONDAY:
-                return 2;
-            case WeekDay.TUESDAY:
-                return 3;
-            case WeekDay.WEDNESDAY:
-                return 4;
-            case WeekDay.THURSDAY:
-                return 5;
-            case WeekDay.FRIDAY:
-                return 6;
-            case WeekDay.SATURDAY:
-                return 7;
-            default:
-                return 1;
-        }
-    }
-
-    private getNextWeekDay(day: WeekDay): WeekDay {
-        if (day === WeekDay.SATURDAY) {
-            return WeekDay.SUNDAY;
-        }
-
-        return (day + 1) as WeekDay;
-    }
-
-    private calculateNextTriggerDate(alarm: TimeAlarm): Date | null {
-        const now = new Date();
-        const [hours, minutes] = alarm.time.split(":").map(Number);
-
-        if (isNaN(hours) || isNaN(minutes)) {
-            console.error("Invalid time format:", alarm.time);
-            return null;
-        }
-
-        let triggerDate = new Date();
-        triggerDate.setHours(hours, minutes, 0, 0);
-
-        if (triggerDate <= now) {
-            if (alarm.repeatDays && alarm.repeatDays.length > 0) {
-                const nextTriggerDate = this.getNextRepeatDate(
-                    alarm,
-                    triggerDate
-                );
-                return nextTriggerDate;
-            } else {
-                triggerDate.setDate(triggerDate.getDate() + 1);
-            }
-        }
-
-        return triggerDate;
-    }
-
-    private getNextRepeatDate(alarm: TimeAlarm, baseDate: Date): Date {
-        const now = new Date();
-
-        const repeatDaysAsNumbers =
-            alarm.repeatDays?.map((weekDay) => {
-                return weekDay === WeekDay.SUNDAY ? 0 : weekDay;
-            }) || [];
-
-        for (let i = 0; i < 7; i++) {
-            const testDate = new Date(baseDate);
-            testDate.setDate(testDate.getDate() + i);
-            const testDay = testDate.getDay();
-
-            if (repeatDaysAsNumbers.includes(testDay)) {
-                if (i === 0 && testDate > now) {
-                    return testDate;
-                }
-                if (i > 0) {
-                    return testDate;
-                }
-            }
-        }
-
-        const nextDate = new Date(baseDate);
-        nextDate.setDate(nextDate.getDate() + 7);
-        return nextDate;
-    }
-
     async cancelAlarmNotification(notificationId: string): Promise<void> {
         try {
-            await Notifications.cancelScheduledNotificationAsync(
-                notificationId
-            );
+            await Notifications.cancelScheduledNotificationAsync(notificationId);
             console.log(`📅 Cancelled notification: ${notificationId}`);
         } catch (error) {
-            console.error("❌ Error cancelling notification:", error);
+            console.error(`❌ Error cancelling notification ${notificationId}:`, error);
+            throw error; // Re-throw to let caller handle
         }
     }
 
@@ -491,6 +126,7 @@ export class NotificationManager {
             console.log("📅 Cancelled all notifications");
         } catch (error) {
             console.error("❌ Error cancelling all notifications:", error);
+            throw error;
         }
     }
 
@@ -501,32 +137,9 @@ export class NotificationManager {
     ): Promise<void> {
         try {
             await this.initialize();
-
-            await Notifications.scheduleNotificationAsync({
-                content: {
-                    title,
-                    body,
-                    sound: true,
-                    priority: Notifications.AndroidNotificationPriority.HIGH,
-                    data: {
-                        alarmId: alarm.id,
-                        alarmLabel: alarm.label,
-                        alarmType: "location",
-                        locationAddress: alarm.targetLocation?.address,
-                        type: "location-alarm",
-                    },
-                },
-                trigger: null,
-            });
-
-            console.log(
-                `📍 Showed location alarm notification for: ${alarm.label}`
-            );
+            await this.locationAlarmScheduler.schedule(alarm, title, body);
         } catch (error) {
-            console.error(
-                "❌ Error showing location alarm notification:",
-                error
-            );
+            console.error("❌ Error showing location alarm notification:", error);
         }
     }
 
@@ -552,36 +165,21 @@ export class NotificationManager {
         return Notifications.addNotificationResponseReceivedListener(
             (response) => {
                 try {
-                    console.log(
-                        "📱 Notification response received:",
-                        response.notification.request.content.data
-                    );
                     callback(response);
                 } catch (error) {
-                    console.error(
-                        "❌ Error handling notification response:",
-                        error
-                    );
+                    console.error("❌ Error handling notification response:", error);
                 }
             }
         );
     }
-
     addNotificationReceivedListener(
         callback: (notification: Notifications.Notification) => void
     ) {
         return Notifications.addNotificationReceivedListener((notification) => {
             try {
-                console.log(
-                    "📱 Notification received:",
-                    notification.request.content.data
-                );
                 callback(notification);
             } catch (error) {
-                console.error(
-                    "❌ Error handling notification received:",
-                    error
-                );
+                console.error("❌ Error handling notification received:", error);
             }
         });
     }

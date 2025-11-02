@@ -72,9 +72,6 @@ export function AlarmPlayer() {
             player.loop = true;
             player.play();
             soundRef.current = player;
-
-            console.log('🔊 Playing alarm sound:', soundIdentifier);
-
             if (!soundRef.current && !activeAlarm?.vibrate) {
                 console.warn('⚠️  No audio sound instance available, using vibration only');
             }

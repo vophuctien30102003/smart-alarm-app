@@ -3,8 +3,8 @@ import { View, Text, TouchableOpacity, Switch } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
 
-const GENTLE_WAKE_OPTIONS = [0, 5, 10, 15];
-const SNOOZE_OPTIONS = [5, 10, 15, 20];
+// const GENTLE_WAKE_OPTIONS = [0, 5, 10, 15];
+// const SNOOZE_OPTIONS = [5, 10, 15, 20];
 const SOUND_OPTIONS = ["Classic bell", "Digital", "Nature"];
 
 interface SettingItemProps {

@@ -11,10 +11,6 @@ export type LocationType = LocationTarget & {
 };
 
 export type ViewMode = 'search' | 'setAlarm' | 'history';
-
-/**
- * @deprecated Use LocationAlarm from `shared/types/alarm.type.ts`
- */
 export interface BaseLocationAlarm {
   id: string;
   name: string;
@@ -25,10 +21,6 @@ export interface BaseLocationAlarm {
   repeat: LocationRepeatOption;
   timestamp: Date | string;
 }
-
-/**
- * @deprecated Use LocationAlarm from `shared/types/alarm.type.ts`
- */
 export interface LocationAlarmType extends BaseLocationAlarm {
   lat: number;
   long: number;
@@ -37,9 +29,6 @@ export interface LocationAlarmType extends BaseLocationAlarm {
   isActive: boolean;
 }
 
-/**
- * @deprecated Use LocationAlarm from `shared/types/alarm.type.ts`
- */
 export interface LocationAlarmHistoryType extends BaseLocationAlarm {
   distance: number;
   coordinates: {
@@ -47,10 +36,6 @@ export interface LocationAlarmHistoryType extends BaseLocationAlarm {
     longitude: number;
   };
 }
-
-/**
- * @deprecated Use specialized config objects in UI components
- */
 export interface MapAlarmConfigType {
   lineName: string;
   timeBeforeArrival: number;

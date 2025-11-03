@@ -9,12 +9,10 @@ import Mapbox, { Camera, LocationPuck, MapView, ShapeSource } from '@rnmapbox/ma
 import Constants from 'expo-constants';
 import { useCallback, useEffect, useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
 import useLocationPermission from '@/hooks/useLocationPermission';
 
 Mapbox.setAccessToken(Constants.expoConfig?.extra?.mapboxAccessToken);
-
-const MapScreen = () => {
+export default function MapScreen() {
   const { hasLocationPermission, currentLocation } = useLocationPermission();
   const currentView = useMapAlarmStore(mapAlarmSelectors.currentView);
   const setCurrentView = useMapAlarmStore(mapAlarmActions.setCurrentView);
@@ -145,4 +143,3 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MapScreen;

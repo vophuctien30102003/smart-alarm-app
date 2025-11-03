@@ -13,6 +13,8 @@ class LocationAlarmService {
   private onAlarmTrigger: ((alarm: LocationAlarm) => void) | null = null;
   private onAlarmComplete: ((alarm: LocationAlarm) => void) | null = null;
   private triggeredAlarms: Set<string> = new Set();
+  private lastTriggerTimestamps: Map<string, number> = new Map();
+  private static readonly REENTER_COOLDOWN_MS = 2 * 60 * 1000;
 
   static getInstance(): LocationAlarmService {
     if (!LocationAlarmService.instance) {
@@ -73,6 +75,8 @@ class LocationAlarmService {
     }
     this.isTracking = false;
     this.activeLocationAlarms.clear();
+    this.triggeredAlarms.clear();
+    this.lastTriggerTimestamps.clear();
   }
 
   addLocationAlarm(alarm: LocationAlarm): void {
@@ -82,6 +86,7 @@ class LocationAlarmService {
     }
 
     this.triggeredAlarms.delete(alarm.id);
+    this.lastTriggerTimestamps.delete(alarm.id);
 
     this.activeLocationAlarms.set(alarm.id, {
       alarm,
@@ -94,8 +99,7 @@ class LocationAlarmService {
   async removeLocationAlarm(alarmId: string): Promise<void> {
     this.activeLocationAlarms.delete(alarmId);
     this.triggeredAlarms.delete(alarmId);
-    console.log(`Removed location alarm: ${alarmId}`);
-
+    this.lastTriggerTimestamps.delete(alarmId);
     if (this.activeLocationAlarms.size === 0) {
       await this.stopLocationTracking();
     }
@@ -110,6 +114,7 @@ class LocationAlarmService {
       if (!incomingIds.has(existingId)) {
         this.activeLocationAlarms.delete(existingId);
         this.triggeredAlarms.delete(existingId);
+        this.lastTriggerTimestamps.delete(existingId);
       }
     }
 
@@ -161,16 +166,37 @@ class LocationAlarmService {
 
       
 
-      this.activeLocationAlarms.set(alarmId, updatedConfig);
+      this.activeLocationAlarms.set(alarmId, updatedConfig)
+      const shouldTrigger = this.shouldTriggerAlarm(alarm, wasInRange, isInRange);
+      if (
+        shouldTrigger &&
+        alarm.arrivalTrigger &&
+        isInRange &&
+        this.triggeredAlarms.has(alarmId)
+      ) {
+        continue;
+      }
 
-      if (this.shouldTriggerAlarm(alarm, wasInRange, isInRange)) {
+      if (shouldTrigger) {
+        const lastTriggeredAt = this.lastTriggerTimestamps.get(alarmId);
+        const now = Date.now();
+        if (
+          alarm.arrivalTrigger &&
+          lastTriggeredAt &&
+          now - lastTriggeredAt < LocationAlarmService.REENTER_COOLDOWN_MS
+        ) {
+          continue;
+        }
+
         await this.triggerLocationAlarm(alarm, updatedConfig);
         this.triggeredAlarms.add(alarmId);
+        this.lastTriggerTimestamps.set(alarmId, now);
         continue;
       }
 
       if (!isInRange && this.triggeredAlarms.has(alarmId)) {
         this.triggeredAlarms.delete(alarmId);
+        this.lastTriggerTimestamps.delete(alarmId);
       }
     }
   }

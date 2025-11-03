@@ -33,6 +33,4 @@ export class LocationAlarmScheduler implements AlarmScheduler {
             throw error;
         }
     }
-
-    // Location alarms are shown immediately, not scheduled, so no cancel method needed
 }

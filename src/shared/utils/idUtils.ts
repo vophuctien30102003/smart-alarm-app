@@ -1,12 +1,9 @@
 import 'react-native-get-random-values';
-
 export function generateId(): string {
-  // Optimized version: timestamp + random for better performance
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
 export function generateUUID(): string {
-  // Full UUID v4 generation (slower, use only when needed)
   const array = new Uint8Array(16);
   crypto.getRandomValues(array);
   

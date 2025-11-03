@@ -1,3 +1,4 @@
+import AlarmSoundService from '@/services/AlarmSoundService';
 import { AlarmRepeatType, AlarmType } from '@/shared/enums';
 import type { AlarmPayload } from '@/shared/types/alarmPayload';
 import { ensureValidAlarmPayload, formatAlarmLabel } from '@/shared/utils/alarmUtils';
@@ -402,6 +403,8 @@ export const useAlarmStore = create<AlarmStore>()(
         },
 
         stopAlarm: () => {
+          void AlarmSoundService.stop();
+
           if (Platform.OS === 'android') {
             try {
               AlarmManager.stop(

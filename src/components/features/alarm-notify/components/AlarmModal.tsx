@@ -21,7 +21,6 @@ export function AlarmModal() {
   return (
     <>
       <AlarmPlayer />
-
       <Modal
         visible
         animationType="fade"
@@ -31,16 +30,12 @@ export function AlarmModal() {
         <View className="flex-1 bg-black/60 justify-center items-center">
           <View className="bg-white rounded-2xl border-2 border-red-500 p-6 w-72 items-center shadow-xl">
             <Text className="text-6xl mb-4">{alarmIcon || "😴"}</Text>
-
             <Text className="text-2xl font-bold text-gray-900 mb-2">
               {alarmLabel || "Alarm"}
             </Text>
-
             <Text className="text-lg text-gray-600 mb-6 text-center">
               {alarmTimeText || "14:00 → 06:15"}
             </Text>
-
-            {/* Buttons */}
             <View className="w-full space-y-3">
               {isSnoozeEnabled && (
                 <Button
@@ -54,10 +49,10 @@ export function AlarmModal() {
               )}
 
               <Button
-                className="bg-red-500 p-4 rounded-lg"
+                className="bg-red-500 rounded-lg"
                 onPress={handleStop}
               >
-                <Text className="text-white text-center font-semibold text-lg">
+                <Text className="text-white text-center text-lg">
                   Stop Alarm
                 </Text>
               </Button>

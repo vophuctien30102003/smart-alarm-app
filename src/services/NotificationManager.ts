@@ -60,7 +60,6 @@ export class NotificationManager {
 
         this.initializationPromise = this.setupNotificationChannels()
             .then(() => {
-                console.log("✅ NotificationManager initialized successfully");
                 this.isInitialized = true;
                 return true;
             })
@@ -87,7 +86,6 @@ export class NotificationManager {
             return null;
         }
     }
-
     async scheduleSleepAlarmNotifications(alarm: SleepAlarm): Promise<{
         bedtimeIds: string[];
         wakeIds: string[];
@@ -116,10 +114,9 @@ export class NotificationManager {
             console.log(`📅 Cancelled notification: ${notificationId}`);
         } catch (error) {
             console.error(`❌ Error cancelling notification ${notificationId}:`, error);
-            throw error; // Re-throw to let caller handle
+            throw error;
         }
     }
-
     async cancelAllAlarmNotifications(): Promise<void> {
         try {
             await Notifications.cancelAllScheduledNotificationsAsync();
@@ -129,7 +126,6 @@ export class NotificationManager {
             throw error;
         }
     }
-
     async showLocationAlarmNotification(
         alarm: LocationAlarm,
         title: string,
@@ -142,7 +138,6 @@ export class NotificationManager {
             console.error("❌ Error showing location alarm notification:", error);
         }
     }
-
     async getScheduledNotifications(): Promise<
         Notifications.NotificationRequest[]
     > {
@@ -158,7 +153,6 @@ export class NotificationManager {
             return [];
         }
     }
-
     addNotificationResponseListener(
         callback: (response: Notifications.NotificationResponse) => void
     ) {
@@ -183,7 +177,6 @@ export class NotificationManager {
             }
         });
     }
-
     async getNotificationStatus(): Promise<{
         isInitialized: boolean;
         hasToken: boolean;
@@ -193,7 +186,6 @@ export class NotificationManager {
         try {
             const permissions = await Notifications.getPermissionsAsync();
             const scheduled = await this.getScheduledNotifications();
-
             return {
                 isInitialized: this.isInitialized,
                 hasToken: !!this.expoPushToken,
@@ -210,10 +202,8 @@ export class NotificationManager {
             };
         }
     }
-
     getExpoPushToken(): string | null {
         return this.expoPushToken;
     }
 }
-
 export default NotificationManager.getInstance();

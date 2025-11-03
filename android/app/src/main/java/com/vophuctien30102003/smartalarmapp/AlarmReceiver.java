@@ -11,8 +11,6 @@ import androidx.core.app.NotificationManagerCompat;
 public class AlarmReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
-        Log.d("AlarmReceiver", "Alarm triggered");
-
         String title = intent.getStringExtra("alarm_title");
         String body = intent.getStringExtra("alarm_text");
 

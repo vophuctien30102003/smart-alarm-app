@@ -1,4 +1,4 @@
-import { addDays, format } from 'date-fns';
+import { format } from 'date-fns';
 import { WeekDay } from '../enums';
 
 export const formatTime = (date: Date): string => {
@@ -101,14 +101,6 @@ export const formatRepeatDays = (repeatDays: WeekDay[]): string => {
   return sortedDays.map(day => getWeekDayFullName(day)).join(', ');
 };
 
-export const generateAlarmId = (): string => {
-  return `alarm_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-};
-
-export const calculateSnoozeTime = (snoozeMinutes: number): Date => {
-  return addDays(new Date(), snoozeMinutes / (24 * 60));
-};
-
 export const addMinutesToTimeString = (time: string, minutesToAdd: number): string => {
   const { hours, minutes } = parseTimeString(time);
   const totalMinutes = (hours * 60 + minutes + minutesToAdd + 24 * 60) % (24 * 60);
@@ -121,9 +113,7 @@ export const getMinutesBetweenTimes = (start: string, end: string): number => {
   const startParts = parseTimeString(start);
   const endParts = parseTimeString(end);
   let diff = (endParts.hours * 60 + endParts.minutes) - (startParts.hours * 60 + startParts.minutes);
-  if (diff < 0) {
-    diff += 24 * 60;
-  }
+  if (diff < 0) diff += 24 * 60;
   return diff;
 };
 

@@ -1,5 +1,5 @@
 import { Text } from '@/components/ui/text';
-import { getDefaultAlarmSounds } from '@/shared/constants';
+import { getDefaultAlarmSounds } from '@/shared/constants/sounds';
 import { WeekDay } from '@/shared/enums';
 import type { SleepAlarmFormData } from '@/shared/types/sleepAlarmForm.type';
 import { formatTime, timeStringToDate } from '@/shared/utils/timeUtils';

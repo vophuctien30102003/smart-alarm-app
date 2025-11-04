@@ -13,7 +13,9 @@ export {
 
 // Selectors - Query alarm store state
 export {
-    selectActiveAlarms, selectActiveAlarmState, selectAlarmById, selectAlarms, selectLocationAlarms, selectSleepAlarms, selectSortedAlarms, selectTimeAlarms
+    selectActiveAlarmState, selectActiveAlarms, selectAlarmById, selectAlarms,
+    selectLocationAlarms, selectSleepAlarms, selectTimeAlarms,
+    sortAlarmsByPriority
 } from './alarmSelectors';
 
 // Notification Helpers - Manage alarm notifications
@@ -25,6 +27,7 @@ export {
 export {
     computeNextTimeAlarmDate,
     getNextAlarmTime,
+    getNextSleepEventDate,
     isAlarmActive
 } from './timeCalculations';
 

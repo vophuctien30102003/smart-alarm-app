@@ -3,7 +3,7 @@ import { AlarmType } from '@/shared/enums';
 import { isSleepAlarm, type SleepAlarm } from '@/shared/types/alarm.type';
 import type { SleepAlarmPayload } from '@/shared/types/alarmPayload';
 import type { SleepAlarmFormData } from '@/shared/types/sleepAlarmForm.type';
-import { createAlarmPayload, formatAlarmLabelForType } from '@/shared/utils/alarmUtils';
+import { formatAlarmLabel } from '@/shared/utils/alarmUtils';
 import { useCallback, useMemo, useState } from 'react';
 
 export const useSleepAlarmManagement = () => {
@@ -15,7 +15,11 @@ export const useSleepAlarmManagement = () => {
   const sleepAlarms = useMemo(() => alarms.filter(isSleepAlarm), [alarms]);
 
   const handleSaveAlarm = useCallback(async (alarmData: SleepAlarmFormData) => {
-    const labelToUse = formatAlarmLabelForType(alarmData, AlarmType.SLEEP, alarmData.selectedDays);
+    const labelToUse = formatAlarmLabel({ 
+      label: alarmData.label, 
+      type: AlarmType.SLEEP,
+      repeatDays: alarmData.selectedDays 
+    });
 
     try {
       if (editingAlarmId) {
@@ -30,14 +34,19 @@ export const useSleepAlarmManagement = () => {
         };
         await updateAlarm(editingAlarmId, updates);
       } else {
-        const payload = createAlarmPayload(AlarmType.SLEEP, {
-          ...alarmData,
-          selectedDays: alarmData.selectedDays,
+        const payload: SleepAlarmPayload = {
+          type: AlarmType.SLEEP,
+          label: labelToUse,
+          bedtime: alarmData.bedtime,
+          wakeUpTime: alarmData.wakeTime,
+          repeatDays: alarmData.selectedDays,
+          goalMinutes: alarmData.goalMinutes,
+          isEnabled: true,
           vibrate: true,
           snoozeEnabled: false,
           snoozeDuration: 5,
           maxSnoozeCount: 0,
-        }) as SleepAlarmPayload;
+        };
         await addAlarm(payload);
       }
     } catch (error) {

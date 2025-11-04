@@ -1,10 +1,9 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 import * as AlarmManager from "react-native-alarm-manager";
-import { NOTIFICATION_CONTENT } from "../../shared/constants/notificationConstants";
-import { ALARM_CHANNEL_ID } from "../../shared/helpers/NotificationChannels";
+import { NOTIFICATION_CONSTANTS, NOTIFICATION_CONTENT } from "../../shared/constants/";
 import { TimeAlarm } from "../../shared/types/alarm.type";
-import { NotificationUtils } from "../../shared/utils/NotificationUtils";
+import { computeNextTimeAlarmDate } from "../../store/helpers/timeCalculations";
 import { AlarmScheduler, SchedulingResult } from "./AlarmScheduler";
 
 export class TimeAlarmScheduler implements AlarmScheduler {
@@ -19,13 +18,13 @@ export class TimeAlarmScheduler implements AlarmScheduler {
     }
 
     private async scheduleIOS(alarm: TimeAlarm): Promise<string> {
-        const triggerDate = NotificationUtils.calculateNextTriggerDate(alarm);
+        const triggerDate = computeNextTimeAlarmDate(alarm);
         if (!triggerDate) throw new Error("Cannot calculate trigger date");
 
         const content = await this.createContent(alarm);
         const trigger: Notifications.DateTriggerInput = {
             type: Notifications.SchedulableTriggerInputTypes.DATE,
-            channelId: ALARM_CHANNEL_ID,
+            channelId: NOTIFICATION_CONSTANTS.ALARM_CHANNEL_ID,
             date: triggerDate,
         };
 
@@ -37,7 +36,7 @@ export class TimeAlarmScheduler implements AlarmScheduler {
     }
 
     private async scheduleAndroid(alarm: TimeAlarm): Promise<string> {
-        const triggerDate = NotificationUtils.calculateNextTriggerDate(alarm);
+        const triggerDate = computeNextTimeAlarmDate(alarm);
         if (!triggerDate) throw new Error("Cannot calculate trigger date");
 
         const alarmTime = `${String(triggerDate.getHours()).padStart(2, "0")}:${String(

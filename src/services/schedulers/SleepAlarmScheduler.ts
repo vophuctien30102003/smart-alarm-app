@@ -1,14 +1,49 @@
 import * as Notifications from "expo-notifications";
-import { NOTIFICATION_DATA_TYPES } from "../../shared/constants/notificationConstants";
-import { ALARM_CHANNEL_ID } from "../../shared/helpers/NotificationChannels";
+import { NOTIFICATION_CONSTANTS, NOTIFICATION_DATA_TYPES } from "../../shared/constants/";
+import { WeekDay } from "../../shared/enums/";
 import { SleepAlarm } from "../../shared/types/alarm.type";
-import { NotificationUtils } from "../../shared/utils/NotificationUtils";
 import {
     formatDurationFromMinutes,
     getMinutesBetweenTimes,
     parseTimeString,
 } from "../../shared/utils/timeUtils";
 import { AlarmScheduler, SchedulingResult } from "./AlarmScheduler";
+
+// Helper: Get next date for a time string (HH:mm)
+const getNextDateForTime = (timeString: string, referenceDate?: Date): Date => {
+    const { hours, minutes } = parseTimeString(timeString);
+    const date = referenceDate ? new Date(referenceDate) : new Date();
+    date.setHours(hours, minutes, 0, 0);
+    
+    if (!referenceDate && date <= new Date()) {
+        date.setDate(date.getDate() + 1);
+    }
+    
+    return date;
+};
+
+// Helper: Create weekly trigger for repeating alarms
+const createWeeklyTrigger = (
+    weekDay: WeekDay,
+    hour: number,
+    minute: number
+): Notifications.WeeklyTriggerInput => ({
+    type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
+    channelId: NOTIFICATION_CONSTANTS.ALARM_CHANNEL_ID,
+    weekday: weekDay + 1, // Convert 0-6 to 1-7 for Expo
+    hour,
+    minute,
+});
+
+// Helper: Get next weekday
+const getNextWeekDay = (currentDay: WeekDay): WeekDay => {
+    const days = [
+        WeekDay.MONDAY, WeekDay.TUESDAY, WeekDay.WEDNESDAY, 
+        WeekDay.THURSDAY, WeekDay.FRIDAY, WeekDay.SATURDAY, WeekDay.SUNDAY
+    ];
+    const currentIndex = days.indexOf(currentDay);
+    return days[(currentIndex + 1) % 7];
+};
 
 export class SleepAlarmScheduler implements AlarmScheduler {
     private createContent(
@@ -39,22 +74,22 @@ export class SleepAlarmScheduler implements AlarmScheduler {
     }
 
     private async scheduleOnce(alarm: SleepAlarm, sleepDurationDisplay: string): Promise<SchedulingResult> {
-        const bedtimeDate = NotificationUtils.getNextDateForTime(alarm.bedtime);
+        const bedtimeDate = getNextDateForTime(alarm.bedtime);
         const wakeReferenceDate = new Date(bedtimeDate);
-        const wakeDate = NotificationUtils.getNextDateForTime(alarm.wakeUpTime, wakeReferenceDate);
+        const wakeDate = getNextDateForTime(alarm.wakeUpTime, wakeReferenceDate);
 
         const bedtimeContent = this.createContent(alarm, 'bedtime', sleepDurationDisplay);
         const wakeContent = this.createContent(alarm, 'wake');
 
         const bedtimeTrigger: Notifications.DateTriggerInput = {
             type: Notifications.SchedulableTriggerInputTypes.DATE,
-            channelId: ALARM_CHANNEL_ID,
+            channelId: NOTIFICATION_CONSTANTS.ALARM_CHANNEL_ID,
             date: bedtimeDate,
         };
 
         const wakeTrigger: Notifications.DateTriggerInput = {
             type: Notifications.SchedulableTriggerInputTypes.DATE,
-            channelId: ALARM_CHANNEL_ID,
+            channelId: NOTIFICATION_CONSTANTS.ALARM_CHANNEL_ID,
             date: wakeDate,
         };
 
@@ -80,9 +115,9 @@ export class SleepAlarmScheduler implements AlarmScheduler {
         const wakeIds: string[] = [];
 
         for (const repeatDay of alarm.repeatDays!) {
-            const bedtimeTrigger = NotificationUtils.createWeeklyTrigger(repeatDay, bedtimeHour, bedtimeMinute);
-            const wakeDay = wakeTotalMinutes >= bedtimeTotalMinutes ? repeatDay : NotificationUtils.getNextWeekDay(repeatDay);
-            const wakeTrigger = NotificationUtils.createWeeklyTrigger(wakeDay, wakeHour, wakeMinute);
+            const bedtimeTrigger = createWeeklyTrigger(repeatDay, bedtimeHour, bedtimeMinute);
+            const wakeDay = wakeTotalMinutes >= bedtimeTotalMinutes ? repeatDay : getNextWeekDay(repeatDay);
+            const wakeTrigger = createWeeklyTrigger(wakeDay, wakeHour, wakeMinute);
 
             const bedtimeContent = this.createContent(alarm, 'bedtime', sleepDurationDisplay);
             const wakeContent = this.createContent(alarm, 'wake');

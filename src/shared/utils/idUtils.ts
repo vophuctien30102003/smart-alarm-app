@@ -1,5 +1,6 @@
 import 'react-native-get-random-values';
-export function generateId(): string {
+
+export function generateTimestampId(): string {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
@@ -23,10 +24,6 @@ export function generateUUID(): string {
   return result;
 }
 
-export function generateTimestampId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-}
-
 export function generateLocationAlarmId(): string {
-  return `loc-alarm-${generateId()}`;
+  return `loc-alarm-${generateTimestampId()}`;
 }

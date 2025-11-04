@@ -23,15 +23,15 @@ export const selectActiveAlarmState = (state: AlarmStore) => ({
   snoozeCount: state.snoozeCount,
 });
 
-const getAlarmPriority = (alarm: Alarm): number => {
+export const getAlarmPriority = (alarm: Alarm): number => {
   if (isTimeAlarm(alarm)) return 0;
   if (isSleepAlarm(alarm)) return 1;
   if (isLocationAlarm(alarm)) return 2;
   return 3;
 };
 
-export const selectSortedAlarms = (state: AlarmStore): Alarm[] => {
-  return [...state.alarms].sort((a, b) => {
+export const sortAlarmsByPriority = (alarms: Alarm[]): Alarm[] => {
+  return [...alarms].sort((a, b) => {
     const priorityDiff = getAlarmPriority(a) - getAlarmPriority(b);
     if (priorityDiff !== 0) return priorityDiff;
 

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { sortAlarms } from '../shared/utils/alarmUtils';
 import { selectAlarms, useAlarmStore } from '../store/alarmStore';
+import { sortAlarmsByPriority } from '../store/helpers/alarmSelectors';
 
 export const useAlarms = () => {
   const alarms = useAlarmStore(selectAlarms);
@@ -9,7 +9,10 @@ export const useAlarms = () => {
   const deleteAlarm = useAlarmStore(state => state.deleteAlarm);
   const toggleAlarm = useAlarmStore(state => state.toggleAlarm);
 
-  const sortedAlarms = useMemo(() => sortAlarms(alarms), [alarms]);
+  const sortedAlarms = useMemo(() => {
+    if (!alarms) return [];
+    return sortAlarmsByPriority(alarms);
+  }, [alarms]);
 
   return {
     alarms: sortedAlarms,

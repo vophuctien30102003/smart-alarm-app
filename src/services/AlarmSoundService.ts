@@ -1,4 +1,4 @@
-import { ALARM_CONSTANTS, getDefaultAlarmSound } from '@/shared/constants';
+import { ALARM_TIME_DEFAULTS, getDefaultAlarmSound } from '@/shared/constants';
 import type { Alarm } from '@/shared/types/alarm.type';
 import type { AudioPlayer, AudioSource } from 'expo-audio';
 import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
@@ -55,7 +55,7 @@ class AlarmSoundService {
       });
 
       const player = createAudioPlayer(source);
-      player.volume = alarm?.volume ?? ALARM_CONSTANTS.DEFAULT_VOLUME;
+      player.volume = alarm?.volume ?? ALARM_TIME_DEFAULTS.VOLUME;
       player.loop = true;
       player.play();
       this.player = player;

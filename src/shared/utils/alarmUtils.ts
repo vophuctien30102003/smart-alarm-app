@@ -1,12 +1,11 @@
 import type { WeekDay } from '@/shared/enums';
 import { AlarmRepeatType, AlarmType } from '@/shared/enums';
 import type { Alarm } from '@/shared/types/alarm.type';
-import { isLocationAlarm, isSleepAlarm, isTimeAlarm } from '@/shared/types/alarm.type';
 import type {
-    AlarmPayload,
-    LocationAlarmPayload,
-    SleepAlarmPayload,
-    TimeAlarmPayload,
+  AlarmPayload,
+  LocationAlarmPayload,
+  SleepAlarmPayload,
+  TimeAlarmPayload,
 } from '@/shared/types/alarmPayload';
 import { formatRepeatDays } from '@/shared/utils/timeUtils';
 
@@ -18,9 +17,7 @@ interface LabelOptions {
 
 export const formatAlarmLabel = ({ label, type, repeatDays }: LabelOptions): string => {
   const trimmed = (label ?? '').trim();
-  if (trimmed.length > 0) {
-    return trimmed;
-  }
+  if (trimmed.length > 0) return trimmed;
 
   if (type === AlarmType.SLEEP || type === AlarmType.TIME) {
     if (repeatDays && repeatDays.length > 0) {
@@ -36,7 +33,6 @@ export const formatAlarmRepeatDescription = (alarm: Alarm): string => {
   if ('repeatDays' in alarm && alarm.repeatDays.length > 0) {
     return formatRepeatDays(alarm.repeatDays);
   }
-
   return 'Once';
 };
 
@@ -45,13 +41,10 @@ const isNonEmpty = (value?: string) => typeof value === 'string' && value.trim()
 const isTimeString = (value: string) => /^([01]?\d|2[0-3]):[0-5]\d$/.test(value);
 const isFiniteNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
 
-export const validateAlarmTime = (time: string): boolean => {
-  return isTimeString(time);
-};
+export const validateAlarmTime = (time: string): boolean => isTimeString(time);
 
-export const validateAlarmLabel = (label: string): boolean => {
-  return isNonEmpty(label) && label.trim().length <= 50;
-};
+export const validateAlarmLabel = (label: string): boolean => 
+  isNonEmpty(label) && label.trim().length <= 50;
 
 export const validateAlarmData = (alarm: {
   time: string;
@@ -180,82 +173,4 @@ export const ensureValidAlarmPayload = <T extends AlarmPayload>(payload: T): T =
     throw new Error(result.errors.join(' '));
   }
   return payload;
-};
-
-// Sorting and priority utilities
-export const getAlarmPriority = (alarm: any) => {
-  if (isTimeAlarm(alarm)) return 0;
-  if (isSleepAlarm(alarm)) return 1;
-  if (isLocationAlarm(alarm)) return 2;
-  return 3;
-};
-
-export const sortAlarms = (alarms: any[]) => {
-  return [...alarms].sort((a, b) => {
-    const priorityDiff = getAlarmPriority(a) - getAlarmPriority(b);
-    if (priorityDiff !== 0) {
-      return priorityDiff;
-    }
-
-    if (isTimeAlarm(a) && isTimeAlarm(b)) {
-      return a.time.localeCompare(b.time);
-    }
-
-    if (isSleepAlarm(a) && isSleepAlarm(b)) {
-      return a.bedtime.localeCompare(b.bedtime);
-    }
-
-    if (isLocationAlarm(a) && isLocationAlarm(b)) {
-      return a.label.localeCompare(b.label);
-    }
-
-    return 0;
-  });
-};
-
-// Payload creation utilities
-export const createAlarmPayload = (type: AlarmType, data: any) => {
-  const basePayload = {
-    type,
-    label: data.label,
-    isEnabled: true,
-    vibrate: data.vibrate ?? true,
-    snoozeEnabled: data.snoozeEnabled ?? false,
-    snoozeDuration: data.snoozeDuration ?? 5,
-    maxSnoozeCount: data.maxSnoozeCount ?? 0,
-  };
-
-  switch (type) {
-    case AlarmType.TIME:
-      return {
-        ...basePayload,
-        time: data.time,
-        repeatDays: data.repeatDays ?? [],
-      };
-    case AlarmType.SLEEP:
-      return {
-        ...basePayload,
-        bedtime: data.bedtime,
-        wakeUpTime: data.wakeTime,
-        repeatDays: data.selectedDays ?? [],
-        goalMinutes: data.goalMinutes,
-      };
-    case AlarmType.LOCATION:
-      return {
-        ...basePayload,
-        targetLocation: data.targetLocation,
-        radius: data.radius ?? 100,
-      };
-    default:
-      throw new Error(`Unsupported alarm type: ${type}`);
-  }
-};
-
-export const formatAlarmLabelForType = (data: any, type: AlarmType, repeatDays?: any[]) => {
-  const preferredLabel = data.label?.trim().length ? data.label : undefined;
-  return formatAlarmLabel({
-    label: preferredLabel,
-    type,
-    repeatDays,
-  });
 };

@@ -1,5 +1,5 @@
 import * as Notifications from "expo-notifications";
-import { NOTIFICATION_DATA_TYPES } from "../../shared/constants/notificationConstants";
+import { NOTIFICATION_DATA_TYPES } from "../../shared/constants/alarmDefaults";
 import { LocationAlarm } from "../../shared/types/alarm.type";
 import { AlarmScheduler, SchedulingResult } from "./AlarmScheduler";
 

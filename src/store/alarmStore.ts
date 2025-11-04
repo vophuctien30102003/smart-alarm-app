@@ -314,7 +314,7 @@ export {
   selectAlarmById,
   selectAlarms,
   selectSleepAlarms,
-  selectSortedAlarms
+  sortAlarmsByPriority
 } from "./helpers/alarmSelectors";
 
 export type { SleepAlarm } from "../shared/types/alarm.type";

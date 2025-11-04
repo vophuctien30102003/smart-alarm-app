@@ -1,6 +1,6 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
-import * as AlarmManager from "react-native-alarm-manager";
+// import * as AlarmManager from "react-native-alarm-manager";
 import { NOTIFICATION_CONSTANTS, NOTIFICATION_CONTENT } from "../../shared/constants/";
 import { TimeAlarm } from "../../shared/types/alarm.type";
 import { computeNextTimeAlarmDate } from "../../store/helpers/timeCalculations";
@@ -44,29 +44,30 @@ export class TimeAlarmScheduler implements AlarmScheduler {
         ).padStart(2, "0")}:00`;
 
         console.log("Alarm time:", alarmTime);
-        return new Promise((resolve, reject) => {
-            AlarmManager.schedule(
-                {
-                    alarm_time: alarmTime,
-                    alarm_title: NOTIFICATION_CONTENT.TIME_ALARM.title,
-                    alarm_text: alarm.label || NOTIFICATION_CONTENT.TIME_ALARM.body,
-                    alarm_sound: "alarm_sound.mp3",
-                    alarm_icon: "ic_launcher",
-                    alarm_sound_loop: true,
-                    alarm_vibration: true,
-                    alarm_noti_removable: false,
-                    alarm_activate: true,
-                },
-                (msg) => {
-                    console.log("✅ Alarm scheduled:", msg);
-                    resolve(alarm.id);
-                },
-                (err) => {
-                    console.error("❌ Failed to schedule:", err);
-                    reject(err);
-                }
-            );
-        });
+        return null
+        // return new Promise((resolve, reject) => {
+        //     AlarmManager.schedule(
+        //         {
+        //             alarm_time: alarmTime,
+        //             alarm_title: NOTIFICATION_CONTENT.TIME_ALARM.title,
+        //             alarm_text: alarm.label || NOTIFICATION_CONTENT.TIME_ALARM.body,
+        //             alarm_sound: "alarm_sound.mp3",
+        //             alarm_icon: "ic_launcher",
+        //             alarm_sound_loop: true,
+        //             alarm_vibration: true,
+        //             alarm_noti_removable: false,
+        //             alarm_activate: true,
+        //         },
+        //         (msg) => {
+        //             console.log("✅ Alarm scheduled:", msg);
+        //             resolve(alarm.id);
+        //         },
+        //         (err) => {
+        //             console.error("❌ Failed to schedule:", err);
+        //             reject(err);
+        //         }
+        //     );
+        // });
     }
 
     async schedule(alarm: TimeAlarm): Promise<SchedulingResult> {

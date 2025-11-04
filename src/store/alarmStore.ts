@@ -5,7 +5,7 @@ import type { AlarmPayload } from "@/shared/types/alarmPayload";
 import { ensureValidAlarmPayload } from "@/shared/utils/alarmUtils";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
-import * as AlarmManager from "react-native-alarm-manager";
+// import * as AlarmManager from "react-native-alarm-manager";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import type {
@@ -213,16 +213,16 @@ export const useAlarmStore = create<AlarmStore>()(
 
                     await AlarmSoundService.stop();
 
-                    if (Platform.OS === "android") {
-                        try {
-                            AlarmManager.stop(() => {}, console.error);
-                        } catch (error) {
-                            console.error(
-                                "Failed to stop Android alarm:",
-                                error
-                            );
-                        }
-                    }
+                    // if (Platform.OS === "android") {
+                    //     try {
+                    //         AlarmManager.stop(() => {}, console.error);
+                    //     } catch (error) {
+                    //         console.error(
+                    //             "Failed to stop Android alarm:",
+                    //             error
+                    //         );
+                    //     }
+                    // }
 
                     clearSnoozeTimeout();
                     set({

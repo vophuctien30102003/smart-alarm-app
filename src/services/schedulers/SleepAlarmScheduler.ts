@@ -22,7 +22,6 @@ const getNextDateForTime = (timeString: string, referenceDate?: Date): Date => {
     return date;
 };
 
-// Helper: Create weekly trigger for repeating alarms
 const createWeeklyTrigger = (
     weekDay: WeekDay,
     hour: number,

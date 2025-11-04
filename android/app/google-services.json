@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "513292214743",
+    "project_id": "smart-alarm-f86e5",
+    "storage_bucket": "smart-alarm-f86e5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:513292214743:android:012f94c5dbd9758d2eab92",
+        "android_client_info": {
+          "package_name": "com.pscd.smartalarmapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAiksy-DTv9L7WaJ25d6kVmxzO8WjDV5gE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

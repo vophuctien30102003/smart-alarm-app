@@ -2,97 +2,68 @@ import { useActiveAlarm } from '@/hooks/useAlarms';
 import { isLocationAlarm, isSleepAlarm, isTimeAlarm } from '@/shared/types/alarm.type';
 import { useCallback, useMemo } from 'react';
 
+const ALARM_ICONS = {
+  time: '⏰',
+  location: '📍',
+  sleep: '😴',
+  default: '⏰',
+} as const;
+
 export function useAlarmOverlay() {
-    const { activeAlarm, isPlaying, stopAlarm, snoozeAlarm } = useActiveAlarm();
+  const { activeAlarm, isPlaying, stopAlarm, snoozeAlarm } = useActiveAlarm();
 
-    const shouldShowModal = useMemo(() => Boolean(activeAlarm && isPlaying), [activeAlarm, isPlaying]);
+  const shouldShowModal = useMemo(() => Boolean(activeAlarm && isPlaying), [activeAlarm, isPlaying]);
 
-    const alarmIcon = useMemo(() => {
-        if (!activeAlarm) {
-            return '⏰';
-        }
+  const alarmMetadata = useMemo(() => {
+    if (!activeAlarm) {
+      return { icon: ALARM_ICONS.default, label: 'Alarm', timeText: '' };
+    }
 
-        if (isTimeAlarm(activeAlarm)) {
-            return '⏰';
-        }
+    if (isTimeAlarm(activeAlarm)) {
+      return {
+        icon: ALARM_ICONS.time,
+        label: activeAlarm.label?.trim() || 'Alarm',
+        timeText: activeAlarm.time,
+      };
+    }
 
-        if (isLocationAlarm(activeAlarm)) {
-            return '📍';
-        }
+    if (isLocationAlarm(activeAlarm)) {
+      const locationName = activeAlarm.targetLocation?.name ?? 'Location Alarm';
+      return {
+        icon: ALARM_ICONS.location,
+        label: activeAlarm.label?.trim() || locationName,
+        timeText: `📍 ${locationName}`,
+      };
+    }
 
-        if (isSleepAlarm(activeAlarm)) {
-            return '😴';
-        }
+    if (isSleepAlarm(activeAlarm)) {
+      return {
+        icon: ALARM_ICONS.sleep,
+        label: activeAlarm.label?.trim() || 'Sleep Schedule',
+        timeText: `Sleep: ${activeAlarm.bedtime} → ${activeAlarm.wakeUpTime}`,
+      };
+    }
 
-        return '⏰';
-    }, [activeAlarm]);
+    return { icon: ALARM_ICONS.default, label: 'Alarm', timeText: 'Alarm' };
+  }, [activeAlarm]);
 
-    const fallbackLabel = useMemo(() => {
-        if (!activeAlarm) {
-            return 'Alarm';
-        }
+  const snoozeText = activeAlarm?.snoozeEnabled 
+    ? `Snooze (${activeAlarm.snoozeDuration || 5} min)` 
+    : '';
 
-        if (isLocationAlarm(activeAlarm)) {
-            return activeAlarm.targetLocation?.name ?? 'Location Alarm';
-        }
+  const handleStop = useCallback(() => stopAlarm(), [stopAlarm]);
+  const handleSnooze = useCallback(() => {
+    if (activeAlarm?.snoozeEnabled) snoozeAlarm();
+  }, [activeAlarm?.snoozeEnabled, snoozeAlarm]);
 
-        if (isSleepAlarm(activeAlarm)) {
-            return 'Sleep Schedule';
-        }
-
-        return 'Alarm';
-    }, [activeAlarm]);
-
-    const alarmLabel = useMemo(() => {
-        const customLabel = activeAlarm?.label?.trim();
-        return customLabel && customLabel.length > 0 ? customLabel : fallbackLabel;
-    }, [activeAlarm?.label, fallbackLabel]);
-
-    const alarmTimeText = useMemo(() => {
-        if (!activeAlarm) {
-            return '';
-        }
-
-        if (isTimeAlarm(activeAlarm)) {
-            return activeAlarm.time;
-        }
-
-        if (isLocationAlarm(activeAlarm)) {
-            return `📍 ${activeAlarm.targetLocation?.name ?? 'Location Alarm'}`;
-        }
-
-        if (isSleepAlarm(activeAlarm)) {
-            return `Sleep: ${activeAlarm.bedtime} → ${activeAlarm.wakeUpTime}`;
-        }
-
-        return 'Alarm';
-    }, [activeAlarm]);
-
-    const snoozeText = useMemo(() => {
-        if (!activeAlarm?.snoozeEnabled) {
-            return '';
-        }
-        return `Snooze (${activeAlarm.snoozeDuration || 5} min)`;
-    }, [activeAlarm?.snoozeEnabled, activeAlarm?.snoozeDuration]);
-
-    const handleStop = useCallback(async () => {
-        await stopAlarm();
-    }, [stopAlarm]);
-
-    const handleSnooze = useCallback(() => {
-        if (activeAlarm?.snoozeEnabled) snoozeAlarm();
-    }, [activeAlarm?.snoozeEnabled, snoozeAlarm]);
-
-    const isSnoozeEnabled = Boolean(activeAlarm?.snoozeEnabled);
-
-    return {
-        alarmIcon,
-        alarmLabel,
-        alarmTimeText,
-        handleSnooze,
-        handleStop,
-        isSnoozeEnabled,
-        shouldShowModal,
-        snoozeText,
-    } as const;
+  return {
+    alarmIcon: alarmMetadata.icon,
+    alarmLabel: alarmMetadata.label,
+    alarmTimeText: alarmMetadata.timeText,
+    handleSnooze,
+    handleStop,
+    isSnoozeEnabled: Boolean(activeAlarm?.snoozeEnabled),
+    shouldShowModal,
+    snoozeText,
+  } as const;
 }

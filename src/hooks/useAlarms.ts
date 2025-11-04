@@ -9,18 +9,9 @@ export const useAlarms = () => {
   const deleteAlarm = useAlarmStore(state => state.deleteAlarm);
   const toggleAlarm = useAlarmStore(state => state.toggleAlarm);
 
-  const sortedAlarms = useMemo(() => {
-    if (!alarms) return [];
-    return sortAlarmsByPriority(alarms);
-  }, [alarms]);
+  const sortedAlarms = useMemo(() => sortAlarmsByPriority(alarms || []), [alarms]);
 
-  return {
-    alarms: sortedAlarms,
-    addAlarm,
-    updateAlarm,
-    deleteAlarm,
-    toggleAlarm,
-  };
+  return { alarms: sortedAlarms, addAlarm, updateAlarm, deleteAlarm, toggleAlarm };
 };
 
 export const useActiveAlarm = () => {
@@ -56,18 +47,12 @@ export const useNextAlarm = () => {
   const getNextAlarmTime = useAlarmStore(state => state.getNextAlarmTime);
 
   return useMemo(() => {
-    const nextAlarm = alarms
+    const enabledAlarms = alarms
       .filter(alarm => alarm.isEnabled)
-      .map(alarm => ({
-        alarm,
-        nextTime: getNextAlarmTime(alarm)
-      }))
+      .map(alarm => ({ alarm, nextTime: getNextAlarmTime(alarm) }))
       .filter(({ nextTime }) => nextTime !== null)
-      .sort((a, b) => {
-        if (!a.nextTime || !b.nextTime) return 0;
-        return a.nextTime.getTime() - b.nextTime.getTime();
-      })[0];
+      .sort((a, b) => a.nextTime!.getTime() - b.nextTime!.getTime());
 
-    return nextAlarm || null;
+    return enabledAlarms[0] || null;
   }, [alarms, getNextAlarmTime]);
 };

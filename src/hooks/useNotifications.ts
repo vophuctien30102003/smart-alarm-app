@@ -3,23 +3,19 @@ import { useCallback, useEffect, useRef } from 'react';
 import notificationManager from '../services/NotificationManager';
 import { useAlarmStore } from '../store/alarmStore';
 
+const TRIGGER_THROTTLE_MS = 3000;
+
 export const useNotificationHandler = () => {
   const triggerAlarm = useAlarmStore(state => state.triggerAlarm);
   const alarms = useAlarmStore(state => state.alarms);
-  const responseListener = useRef<Notifications.Subscription | null>(null);
-  const notificationListener = useRef<Notifications.Subscription | null>(null);
   const lastTriggeredRef = useRef<Record<string, number>>({});
 
   const triggerIfNeeded = useCallback((alarmId: string | undefined) => {
-    if (!alarmId) {
-      return;
-    }
+    if (!alarmId) return;
 
     const now = Date.now();
     const lastTriggeredAt = lastTriggeredRef.current[alarmId] ?? 0;
-    if (now - lastTriggeredAt < 3000) {
-      return;
-    }
+    if (now - lastTriggeredAt < TRIGGER_THROTTLE_MS) return;
 
     const alarm = alarms.find(a => a.id === alarmId);
     if (alarm) {
@@ -30,37 +26,34 @@ export const useNotificationHandler = () => {
     }
   }, [alarms, triggerAlarm]);
 
-  const handleNotificationResponse = useCallback((response: Notifications.NotificationResponse) => {
-    const { data } = response.notification.request.content;
+  const handleNotification = useCallback((data: any) => {
     const notificationType = data?.type;
-
-    if ((notificationType === 'alarm' || notificationType === 'sleep-alarm' || notificationType === 'location-alarm')) {
-      const alarmId = typeof data?.alarmId === 'string' ? data.alarmId : undefined;
-      triggerIfNeeded(alarmId);
+    const isAlarmType = notificationType === 'alarm' || 
+                        notificationType === 'sleep-alarm' || 
+                        notificationType === 'location-alarm';
+    
+    if (isAlarmType && typeof data?.alarmId === 'string') {
+      triggerIfNeeded(data.alarmId);
     }
   }, [triggerIfNeeded]);
+
+  const handleNotificationResponse = useCallback((response: Notifications.NotificationResponse) => {
+    handleNotification(response.notification.request.content.data);
+  }, [handleNotification]);
 
   const handleNotificationReceived = useCallback((notification: Notifications.Notification) => {
-    const { data } = notification.request.content;
-    const notificationType = data?.type;
-
-    if ((notificationType === 'alarm' || notificationType === 'sleep-alarm' || notificationType === 'location-alarm')) {
-      const alarmId = typeof data?.alarmId === 'string' ? data.alarmId : undefined;
-      triggerIfNeeded(alarmId);
-    }
-  }, [triggerIfNeeded]);
+    handleNotification(notification.request.content.data);
+  }, [handleNotification]);
 
   useEffect(() => {
-    // Initialize notification manager
     void notificationManager.initialize();
 
-    // Set up listeners
-    responseListener.current = notificationManager.addNotificationResponseListener(handleNotificationResponse);
-    notificationListener.current = notificationManager.addNotificationReceivedListener(handleNotificationReceived);
+    const responseListener = notificationManager.addNotificationResponseListener(handleNotificationResponse);
+    const notificationListener = notificationManager.addNotificationReceivedListener(handleNotificationReceived);
 
     return () => {
-      responseListener.current?.remove();
-      notificationListener.current?.remove();
+      responseListener?.remove();
+      notificationListener?.remove();
     };
   }, [handleNotificationResponse, handleNotificationReceived]);
 
@@ -74,8 +67,7 @@ export const useNotificationHandler = () => {
 export const useNotificationPermissions = () => {
   const checkPermissions = useCallback(async () => {
     try {
-      const status = await notificationManager.getNotificationStatus();
-      return status;
+      return await notificationManager.getNotificationStatus();
     } catch (error) {
       console.error('Error checking notification permissions:', error);
       return null;
@@ -91,8 +83,5 @@ export const useNotificationPermissions = () => {
     }
   }, []);
 
-  return {
-    checkPermissions,
-    requestPermissions,
-  };
+  return { checkPermissions, requestPermissions };
 };

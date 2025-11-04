@@ -70,15 +70,13 @@ export const useMapboxSearch = (query: string) => {
                 const validResults = formattedResults.filter((result): result is MapboxSearchResult => result !== null);
                 setResults(validResults);
 
-                console.log("Formatted search results:", validResults);
-
             } catch (err) {
                 console.error("Search error:", err);
                 setError("Failed to fetch search results");
             } finally {
                 setLoading(false);
             }
-        }, 1000),
+        }, 1500),
         []
     );
 

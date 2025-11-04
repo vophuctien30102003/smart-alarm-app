@@ -9,13 +9,12 @@ import { useCallback, useMemo, useState } from 'react';
 export const useSleepAlarmManagement = () => {
   const [showSetAlarm, setShowSetAlarm] = useState(false);
   const [editingAlarmId, setEditingAlarmId] = useState<string | null>(null);
-
   const { alarms, addAlarm, updateAlarm } = useAlarms();
 
   const sleepAlarms = useMemo(() => alarms.filter(isSleepAlarm), [alarms]);
 
   const handleSaveAlarm = useCallback(async (alarmData: SleepAlarmFormData) => {
-    const labelToUse = formatAlarmLabel({ 
+    const label = formatAlarmLabel({ 
       label: alarmData.label, 
       type: AlarmType.SLEEP,
       repeatDays: alarmData.selectedDays 
@@ -23,20 +22,19 @@ export const useSleepAlarmManagement = () => {
 
     try {
       if (editingAlarmId) {
-        const updates: Partial<SleepAlarmPayload> = {
+        await updateAlarm(editingAlarmId, {
           type: AlarmType.SLEEP,
-          label: labelToUse,
+          label,
           bedtime: alarmData.bedtime,
           wakeUpTime: alarmData.wakeTime,
           repeatDays: alarmData.selectedDays,
           goalMinutes: alarmData.goalMinutes,
           isEnabled: true,
-        };
-        await updateAlarm(editingAlarmId, updates);
+        } as Partial<SleepAlarmPayload>);
       } else {
-        const payload: SleepAlarmPayload = {
+        await addAlarm({
           type: AlarmType.SLEEP,
-          label: labelToUse,
+          label,
           bedtime: alarmData.bedtime,
           wakeUpTime: alarmData.wakeTime,
           repeatDays: alarmData.selectedDays,
@@ -46,14 +44,12 @@ export const useSleepAlarmManagement = () => {
           snoozeEnabled: false,
           snoozeDuration: 5,
           maxSnoozeCount: 0,
-        };
-        await addAlarm(payload);
+        } as SleepAlarmPayload);
       }
-    } catch (error) {
-      console.error('Failed to save sleep alarm', error);
-    } finally {
       setEditingAlarmId(null);
       setShowSetAlarm(false);
+    } catch (error) {
+      console.error('Failed to save sleep alarm', error);
     }
   }, [editingAlarmId, updateAlarm, addAlarm]);
 
@@ -71,7 +67,8 @@ export const useSleepAlarmManagement = () => {
 
   const getEditingAlarmData = useCallback(() => {
     if (!editingAlarmId) return undefined;
-    const editingAlarm = sleepAlarms.find((alarm) => alarm.id === editingAlarmId);
+    
+    const editingAlarm = sleepAlarms.find(alarm => alarm.id === editingAlarmId);
     return editingAlarm ? {
       bedtime: editingAlarm.bedtime,
       wakeTime: editingAlarm.wakeUpTime,

@@ -46,7 +46,8 @@ const useLocationPermission = (): UseLocationPermissionResult => {
 
 	useEffect(() => {
 		void requestPermission();
-	}, [requestPermission]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []); // Only request permission once on mount
 
 	return {
 		hasLocationPermission,

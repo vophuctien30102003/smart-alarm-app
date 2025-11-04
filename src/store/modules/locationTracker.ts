@@ -1,4 +1,5 @@
 import LocationAlarmService from '@/services/LocationAlarmService';
+import { ALARM_LOCATION_DEFAULTS } from '@/shared/constants/alarmDefaults';
 import type { LocationAlarm, LocationTarget } from '@/shared/types/alarm.type';
 import type { LocationAlarmStatus } from '@/shared/types/locationTracking.type';
 import { calculateDistanceInMeters } from '@/shared/utils/locationUtils';
@@ -66,9 +67,7 @@ export const createLocationTracker = (service: LocationServiceLike = defaultServ
 
       if (!position) {
         const currentLocation = await getCurrentLocation();
-        if (!currentLocation) {
-          return null;
-        }
+        if (!currentLocation) return null;
 
         position = {
           latitude: currentLocation.coords.latitude,
@@ -77,13 +76,9 @@ export const createLocationTracker = (service: LocationServiceLike = defaultServ
       }
 
       const distanceMeters = calculateDistanceInMeters(position, targetLocation.coordinates);
-      if (!Number.isFinite(distanceMeters)) {
-        return null;
-      }
+      if (!Number.isFinite(distanceMeters)) return null;
 
-      const averageSpeedMetersPerMinute = 83.33;
-      const minutesUntilArrival = distanceMeters / averageSpeedMetersPerMinute;
-
+      const minutesUntilArrival = distanceMeters / ALARM_LOCATION_DEFAULTS.AVERAGE_SPEED_METERS_PER_MINUTE;
       return new Date(Date.now() + minutesUntilArrival * 60 * 1000);
     } catch (error) {
       console.error('Failed to estimate arrival time:', error);

@@ -1,49 +1,13 @@
-import { useCallback, useMemo } from 'react';
-import { sortAlarms, validateAlarmData, validateAlarmLabel, validateAlarmTime } from '../shared/utils/alarmUtils';
+import { useMemo } from 'react';
+import { sortAlarms } from '../shared/utils/alarmUtils';
 import { selectAlarms, useAlarmStore } from '../store/alarmStore';
 
 export const useAlarms = () => {
   const alarms = useAlarmStore(selectAlarms);
-  const _addAlarm = useAlarmStore(state => state.addAlarm);
-  const _updateAlarm = useAlarmStore(state => state.updateAlarm);
-  const _deleteAlarm = useAlarmStore(state => state.deleteAlarm);
-  const _toggleAlarm = useAlarmStore(state => state.toggleAlarm);
-
-  const addAlarm = useCallback(async (alarm: Parameters<typeof _addAlarm>[0]) => {
-    try {
-      await _addAlarm(alarm);
-    } catch (error) {
-      console.error('Failed to add alarm:', error);
-      throw error;
-    }
-  }, [_addAlarm]);
-
-  const updateAlarm = useCallback(async (id: string, updates: Parameters<typeof _updateAlarm>[1]) => {
-    try {
-      await _updateAlarm(id, updates);
-    } catch (error) {
-      console.error('Failed to update alarm:', error);
-      throw error;
-    }
-  }, [_updateAlarm]);
-
-  const deleteAlarm = useCallback(async (id: string) => {
-    try {
-      await _deleteAlarm(id);
-    } catch (error) {
-      console.error('Failed to delete alarm:', error);
-      throw error;
-    }
-  }, [_deleteAlarm]);
-
-  const toggleAlarm = useCallback(async (id: string) => {
-    try {
-      await _toggleAlarm(id);
-    } catch (error) {
-      console.error('Failed to toggle alarm:', error);
-      throw error;
-    }
-  }, [_toggleAlarm]);
+  const addAlarm = useAlarmStore(state => state.addAlarm);
+  const updateAlarm = useAlarmStore(state => state.updateAlarm);
+  const deleteAlarm = useAlarmStore(state => state.deleteAlarm);
+  const toggleAlarm = useAlarmStore(state => state.toggleAlarm);
 
   const sortedAlarms = useMemo(() => sortAlarms(alarms), [alarms]);
 
@@ -88,25 +52,19 @@ export const useNextAlarm = () => {
   const alarms = useAlarmStore(state => state.alarms);
   const getNextAlarmTime = useAlarmStore(state => state.getNextAlarmTime);
 
-  const nextAlarm = alarms
-    .filter(alarm => alarm.isEnabled)
-    .map(alarm => ({
-      alarm,
-      nextTime: getNextAlarmTime(alarm)
-    }))
-    .filter(({ nextTime }) => nextTime !== null)
-    .sort((a, b) => {
-      if (!a.nextTime || !b.nextTime) return 0;
-      return a.nextTime.getTime() - b.nextTime.getTime();
-    })[0];
+  return useMemo(() => {
+    const nextAlarm = alarms
+      .filter(alarm => alarm.isEnabled)
+      .map(alarm => ({
+        alarm,
+        nextTime: getNextAlarmTime(alarm)
+      }))
+      .filter(({ nextTime }) => nextTime !== null)
+      .sort((a, b) => {
+        if (!a.nextTime || !b.nextTime) return 0;
+        return a.nextTime.getTime() - b.nextTime.getTime();
+      })[0];
 
-  return nextAlarm || null;
-};
-
-export const useAlarmValidation = () => {
-  return {
-    validateAlarmTime,
-    validateAlarmLabel,
-    validateAlarmData,
-  };
+    return nextAlarm || null;
+  }, [alarms, getNextAlarmTime]);
 };

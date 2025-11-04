@@ -1,8 +1,8 @@
 import { useActiveAlarm } from '@/hooks/useAlarms';
 import AlarmSoundService from '@/services/AlarmSoundService';
-import { useEffect, useRef } from 'react';
+import { memo, useEffect, useRef } from 'react';
 
-export function AlarmPlayer() {
+function AlarmPlayerComponent() {
     const { activeAlarm, isPlaying } = useActiveAlarm();
     const lastStateRef = useRef({ alarmId: '', isPlaying: false });
     
@@ -23,13 +23,14 @@ export function AlarmPlayer() {
         } else {
             AlarmSoundService.stop().catch(console.error);
         }
-    }, [activeAlarm, isPlaying]);
 
-    useEffect(() => {
+        // Cleanup on unmount
         return () => {
             void AlarmSoundService.stop();
         };
-    }, []);
+    }, [activeAlarm, isPlaying]);
 
     return null;
 }
+
+export const AlarmPlayer = memo(AlarmPlayerComponent);

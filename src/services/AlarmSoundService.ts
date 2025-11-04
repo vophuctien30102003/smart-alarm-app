@@ -8,23 +8,24 @@ import { Platform } from 'react-native';
 class AlarmSoundService {
   private player: AudioPlayer | null = null;
   private vibrationInterval: ReturnType<typeof setInterval> | null = null;
-  private isStarting: boolean = false;
+  private isStarting = false;
 
-  private clearVibration() {
+  private clearVibration(): void {
     if (this.vibrationInterval) {
       clearInterval(this.vibrationInterval);
       this.vibrationInterval = null;
     }
   }
 
-  private triggerVibration(alarm?: Alarm) {
+  private triggerVibration(alarm?: Alarm): void {
     if (!alarm?.vibrate) return;
 
     const vibrate = () => {
-      const action = Platform.OS === 'ios' 
-        ? Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-        : Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-      void action;
+      if (Platform.OS === 'ios') {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      }
     };
 
     this.clearVibration();
@@ -32,7 +33,7 @@ class AlarmSoundService {
     this.vibrationInterval = setInterval(vibrate, 1000);
   }
 
-  async start(alarm?: Alarm) {
+  async start(alarm?: Alarm): Promise<void> {
     if (this.isStarting) return;
     
     this.isStarting = true;
@@ -41,7 +42,9 @@ class AlarmSoundService {
       await this.stop();
 
       const soundIdentifier = alarm?.sound?.uri ?? getDefaultAlarmSound().uri;
-      const source: AudioSource = typeof soundIdentifier === 'number' ? soundIdentifier : { uri: soundIdentifier };
+      const source: AudioSource = typeof soundIdentifier === 'number' 
+        ? soundIdentifier 
+        : { uri: soundIdentifier };
 
       await setAudioModeAsync({
         allowsRecording: false,
@@ -66,7 +69,7 @@ class AlarmSoundService {
     }
   }
 
-  async stop() {
+  async stop(): Promise<void> {
     if (this.isStarting) return;
     
     this.clearVibration();
@@ -84,6 +87,14 @@ class AlarmSoundService {
       await setAudioModeAsync({ shouldPlayInBackground: false });
     } catch (error) {
       console.warn('Failed to stop alarm player:', error);
+    }
+  }
+
+  dispose(): void {
+    this.clearVibration();
+    if (this.player) {
+      this.player.remove();
+      this.player = null;
     }
   }
 }

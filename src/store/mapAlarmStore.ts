@@ -1,3 +1,4 @@
+import { ALARM_LOCATION_DEFAULTS } from '@/shared/constants/alarmDefaults';
 import { convertSoundToAlarmSound } from '@/shared/constants/sounds';
 import { AlarmRepeatType, AlarmType } from '@/shared/enums';
 import type { LocationAlarm } from '@/shared/types/alarm.type';
@@ -13,15 +14,8 @@ import { create } from 'zustand';
 const STORAGE_KEY = 'map-alarm-storage';
 
 const ensureDateString = (value: Date | string | undefined): string => {
-  if (!value) {
-    return new Date().toISOString();
-  }
-
-  if (typeof value === 'string') {
-    return value;
-  }
-
-  return value.toISOString();
+  if (!value) return new Date().toISOString();
+  return typeof value === 'string' ? value : value.toISOString();
 };
 
 const isLegacyLocationAlarm = (
@@ -47,11 +41,11 @@ const normalizeLocationAlarm = (
       label: alarm.lineName || alarm.name,
       isEnabled: alarm.isActive ?? true,
       sound,
-      volume: 1,
+      volume: ALARM_LOCATION_DEFAULTS.VOLUME,
       vibrate: true,
       snoozeEnabled: false,
-      snoozeDuration: 5,
-      maxSnoozeCount: 0,
+      snoozeDuration: ALARM_LOCATION_DEFAULTS.SNOOZE_DURATION,
+      maxSnoozeCount: ALARM_LOCATION_DEFAULTS.MAX_SNOOZE_COUNT,
       createdAt: ensureDateString(alarm.timestamp),
       updatedAt: new Date().toISOString(),
       type: AlarmType.LOCATION,
@@ -88,17 +82,17 @@ const normalizeLocationAlarm = (
     label: alarm.label ?? targetLocation.name ?? 'Location Alarm',
     isEnabled: alarm.isEnabled ?? true,
     sound,
-    volume: alarm.volume ?? 1,
+    volume: alarm.volume ?? ALARM_LOCATION_DEFAULTS.VOLUME,
     vibrate: alarm.vibrate ?? true,
     snoozeEnabled: alarm.snoozeEnabled ?? false,
-    snoozeDuration: alarm.snoozeDuration ?? 5,
-    maxSnoozeCount: alarm.maxSnoozeCount ?? 0,
+    snoozeDuration: alarm.snoozeDuration ?? ALARM_LOCATION_DEFAULTS.SNOOZE_DURATION,
+    maxSnoozeCount: alarm.maxSnoozeCount ?? ALARM_LOCATION_DEFAULTS.MAX_SNOOZE_COUNT,
     createdAt: ensureDateString(alarm.createdAt),
     updatedAt: ensureDateString(alarm.updatedAt),
     type: AlarmType.LOCATION,
     targetLocation,
-    radiusMeters: alarm.radiusMeters ?? 100,
-    timeBeforeArrival: alarm.timeBeforeArrival ?? 5,
+    radiusMeters: alarm.radiusMeters ?? ALARM_LOCATION_DEFAULTS.RADIUS_METERS,
+    timeBeforeArrival: alarm.timeBeforeArrival ?? ALARM_LOCATION_DEFAULTS.TIME_BEFORE_ARRIVAL,
     arrivalTrigger: alarm.arrivalTrigger ?? true,
     repeatType: alarm.repeatType ?? AlarmRepeatType.ONCE,
   };

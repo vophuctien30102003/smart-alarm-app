@@ -6,9 +6,7 @@ import { LocationType } from "../shared/types/alarmLocation.type";
 interface LocationStore {
     currentLocation: LocationType | null;
     selectedLocation: LocationType | null;
-    previewLocation: LocationType | null;
     selectedDestination: LocationType | null;
-
     setCurrentLocation: (location: LocationType) => void;
     setSelectedLocation: (location: LocationType) => void;
     setSelectedDestination: (location: LocationType) => void;
@@ -18,29 +16,21 @@ interface LocationStore {
 
 export const useLocationStore = create<LocationStore>()(
     persist(
-        (set, get) => ({
+        (set) => ({
             currentLocation: null,
             selectedLocation: null,
-            favoriteLocations: [],
-            previewLocation: null,
             selectedDestination: null,
 
-            setCurrentLocation: (location) =>
-                set({ currentLocation: location }),
-            setSelectedLocation: (location) =>
-                set({ selectedLocation: location }),
-            setSelectedDestination: (location) =>
-                set({ selectedDestination: location }),
-
+            setCurrentLocation: (location) => set({ currentLocation: location }),
+            setSelectedLocation: (location) => set({ selectedLocation: location }),
+            setSelectedDestination: (location) => set({ selectedDestination: location }),
             clearSelectedDestination: () => set({ selectedDestination: null }),
 
-            reset: () =>
-                set({
-                    currentLocation: null,
-                    selectedLocation: null,
-                    previewLocation: null,
-                    selectedDestination: null,
-                }),
+            reset: () => set({
+                currentLocation: null,
+                selectedLocation: null,
+                selectedDestination: null,
+            }),
         }),
         {
             name: "location-storage",

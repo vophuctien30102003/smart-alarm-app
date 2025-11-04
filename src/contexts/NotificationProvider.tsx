@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import notificationManager from '../services/NotificationManager';
 import { useAlarmStore } from '../store/alarmStore';
 
@@ -27,57 +27,51 @@ export const NotificationProvider: React.FC<Props> = ({ children }) => {
   const [hasPermission, setHasPermission] = useState(false);
   const { triggerAlarm } = useAlarmStore();
 
-  const initializeNotifications = async () => {
+  const initializeNotifications = useCallback(async () => {
     try {
       const success = await notificationManager.initialize();
       setHasPermission(success);
       setIsInitialized(true);
-      
     } catch (error) {
       console.error('❌ Error initializing notifications:', error);
       setIsInitialized(true);
       setHasPermission(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     initializeNotifications();
 
-    const responseSubscription = notificationManager.addNotificationResponseListener((response) => {
-      const { alarmId } = response.notification.request.content.data || {};
-      
-      if (alarmId) {
+    const handleNotification = (data: Record<string, unknown> | undefined) => {
+      const alarmId = data?.alarmId;
+      if (typeof alarmId === 'string') {
         const alarms = useAlarmStore.getState().alarms;
         const alarm = alarms.find(a => a.id === alarmId);
         if (alarm) {
           triggerAlarm(alarm);
         }
       }
+    };
+
+    const responseSubscription = notificationManager.addNotificationResponseListener((response) => {
+      handleNotification(response.notification.request.content.data as Record<string, unknown>);
     });
 
     const receivedSubscription = notificationManager.addNotificationReceivedListener((notification) => {
-      const { alarmId } = notification.request.content.data || {};
-      
-      if (alarmId) {
-        const alarms = useAlarmStore.getState().alarms;
-        const alarm = alarms.find(a => a.id === alarmId);
-        if (alarm) {
-          triggerAlarm(alarm);
-        }
-      }
+      handleNotification(notification.request.content.data as Record<string, unknown>);
     });
 
     return () => {
       responseSubscription.remove();
       receivedSubscription.remove();
     };
-  }, [triggerAlarm]);
+  }, [initializeNotifications, triggerAlarm]);
 
-  const value: NotificationContextType = {
+  const value = useMemo<NotificationContextType>(() => ({
     isInitialized,
     hasPermission,
     initializeNotifications,
-  };
+  }), [isInitialized, hasPermission, initializeNotifications]);
 
   return (
     <NotificationContext.Provider value={value}>

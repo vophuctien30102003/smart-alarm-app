@@ -27,21 +27,11 @@ const DEFAULT_VOLUME = 0.8;
 type MergeAlarmFn = (id: string, partial: Partial<Alarm>) => void;
 
 const scheduleNotificationsForAlarm = async (alarm: Alarm, merge: MergeAlarmFn) => {
-  if (!alarm.isEnabled) {
-    return;
-  }
-
-  if (isLocationAlarm(alarm)) {
-    // Location alarms are handled via location tracker rather than notifications
-    return;
-  }
+  if (!alarm.isEnabled || isLocationAlarm(alarm)) return;
 
   if (isSleepAlarm(alarm)) {
     const { bedtimeIds, wakeIds } = await scheduleSleepNotifications(alarm);
-    merge(alarm.id, {
-      bedtimeNotificationIds: bedtimeIds,
-      wakeNotificationIds: wakeIds,
-    });
+    merge(alarm.id, { bedtimeNotificationIds: bedtimeIds, wakeNotificationIds: wakeIds });
     return;
   }
 
@@ -51,18 +41,13 @@ const scheduleNotificationsForAlarm = async (alarm: Alarm, merge: MergeAlarmFn) 
   }
 
   const notificationId = await notificationManager.scheduleAlarmNotification(alarm);
-  if (notificationId) {
-    merge(alarm.id, { notificationId });
-  }
+  if (notificationId) merge(alarm.id, { notificationId });
 };
 
 const cancelNotificationsForAlarm = async (alarm: Alarm, merge: MergeAlarmFn) => {
   if (isSleepAlarm(alarm)) {
     await cancelSleepNotifications(alarm);
-    merge(alarm.id, {
-      bedtimeNotificationIds: [],
-      wakeNotificationIds: [],
-    });
+    merge(alarm.id, { bedtimeNotificationIds: [], wakeNotificationIds: [] });
   }
 
   if (alarm.notificationId) {
@@ -338,6 +323,11 @@ export const useAlarmStore = create<AlarmStore>()(
           if (isLocationAlarm(alarm)) {
             await locationTracker.removeLocationAlarm(alarm.id);
           }
+
+          const { activeAlarm, stopAlarm } = get();
+          if (activeAlarm?.id === alarm.id) {
+            await stopAlarm();
+          }
         },
 
         deleteAlarm: async (id: string) => {
@@ -380,7 +370,7 @@ export const useAlarmStore = create<AlarmStore>()(
 
           const maxSnooze = activeAlarm.maxSnoozeCount || MAX_SNOOZE_COUNT;
           if (snoozeCount >= maxSnooze) {
-            get().stopAlarm();
+            void get().stopAlarm();
             return;
           }
 
@@ -402,17 +392,17 @@ export const useAlarmStore = create<AlarmStore>()(
           );
         },
 
-        stopAlarm: () => {
-          void AlarmSoundService.stop();
+        stopAlarm: async () => {
+          const { activeAlarm } = get();
+          if (!activeAlarm) return;
+          
+          await AlarmSoundService.stop();
 
           if (Platform.OS === 'android') {
             try {
-              AlarmManager.stop(
-                () => console.log('✅ Native alarm service stopped'),
-                (error: unknown) => console.error('❌ Failed to stop native alarm service', error)
-              );
+              AlarmManager.stop(() => {}, console.error);
             } catch (error) {
-              console.error('❌ Failed to invoke native alarm stop', error);
+              console.error('Failed to stop Android alarm:', error);
             }
           }
 

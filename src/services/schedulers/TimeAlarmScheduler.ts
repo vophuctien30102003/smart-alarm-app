@@ -14,6 +14,7 @@ export class TimeAlarmScheduler implements AlarmScheduler {
             body: alarm.label || NOTIFICATION_CONTENT.TIME_ALARM.body,
             sound: true,
             priority: Notifications.AndroidNotificationPriority.MAX,
+            data: { alarmId: alarm.id }
         };
     }
 
@@ -32,8 +33,6 @@ export class TimeAlarmScheduler implements AlarmScheduler {
             content,
             trigger,
         });
-
-        console.log(`📅 Scheduled time alarm for ${triggerDate.toLocaleString()}`);
         return notificationId;
     }
 
@@ -45,13 +44,14 @@ export class TimeAlarmScheduler implements AlarmScheduler {
             triggerDate.getMinutes()
         ).padStart(2, "0")}:00`;
 
+        console.log("Alarm time:", alarmTime);
         return new Promise((resolve, reject) => {
             AlarmManager.schedule(
                 {
                     alarm_time: alarmTime,
                     alarm_title: NOTIFICATION_CONTENT.TIME_ALARM.title,
                     alarm_text: alarm.label || NOTIFICATION_CONTENT.TIME_ALARM.body,
-                    alarm_sound: "alarm_sound",
+                    alarm_sound: "alarm_sound.mp3",
                     alarm_icon: "ic_launcher",
                     alarm_sound_loop: true,
                     alarm_vibration: true,
@@ -72,6 +72,7 @@ export class TimeAlarmScheduler implements AlarmScheduler {
 
     async schedule(alarm: TimeAlarm): Promise<SchedulingResult> {
         try {
+            console.log("🔔 Scheduling time alarm:", alarm);
             const notificationId = Platform.OS === "android"
                 ? await this.scheduleAndroid(alarm)
                 : await this.scheduleIOS(alarm);

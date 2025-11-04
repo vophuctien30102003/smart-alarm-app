@@ -1,3 +1,4 @@
+import { Switch } from "@/components";
 import { Text } from "@/components/ui/text";
 import { useAlarms } from "@/hooks/useAlarms";
 import { SleepAlarm } from "@/shared/types/alarm.type";
@@ -6,10 +7,9 @@ import {
     formatRepeatDays,
     getMinutesBetweenTimes,
 } from "@/shared/utils/timeUtils";
-import { FlatList, TouchableOpacity, View } from "react-native";
-import { Switch } from "@/components";
-import { memo, useCallback } from "react";
 import { Moon, Sun1 } from "iconsax-react-native";
+import { memo, useCallback } from "react";
+import { FlatList, TouchableOpacity, View } from "react-native";
 
 interface Props {
     alarms: SleepAlarm[];
@@ -21,10 +21,12 @@ const SleepAlarmItem = memo(function SleepAlarmItem({
     item,
     onEdit,
     onToggle,
+    onDelete,
 }: {
     item: SleepAlarm;
     onEdit: (alarm: SleepAlarm) => void;
     onToggle: (id: string) => void;
+    onDelete: (id: string) => void;
 }) {
     const durationMinutes =
         item.goalMinutes ??
@@ -55,7 +57,9 @@ const SleepAlarmItem = memo(function SleepAlarmItem({
                 <View className="flex-1 justify-center items-center">
                     <View className="flex-row items-center mb-1 gap-2">
                         <Moon size="24" color="#f5ce85" variant="Bold" />
-                        <Text className="text-[13px] text-[#B3B3B3] mb-1 flex-row items-center">Bedtime</Text>   
+                        <Text className="text-[13px] text-[#B3B3B3] mb-1 flex-row items-center">
+                            Bedtime
+                        </Text>
                     </View>
                     <Text className="text-white text-2xl font-light">
                         {item.bedtime}
@@ -65,7 +69,9 @@ const SleepAlarmItem = memo(function SleepAlarmItem({
                 <View className="flex-1  justify-center items-center">
                     <View className="flex-row items-center mb-1 gap-2">
                         <Sun1 size="24" color="#f5ce85" variant="Bold" />
-                        <Text className="text-[13px] text-[#B3B3B3] mb-1 flex-row items-center">Wake-up</Text>   
+                        <Text className="text-[13px] text-[#B3B3B3] mb-1 flex-row items-center">
+                            Wake-up
+                        </Text>
                     </View>
                     <Text className="text-white text-2xl font-light">
                         {item.wakeUpTime}
@@ -85,6 +91,14 @@ const SleepAlarmItem = memo(function SleepAlarmItem({
                         Edit
                     </Text>
                 </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={() => onDelete(item.id)}
+                    className="px-3 py-1 rounded-full bg-white/10"
+                >
+                    <Text className="text-[#f01c38] text-xs font-semibold">
+                        Delete
+                    </Text>
+                </TouchableOpacity>
             </View>
         </View>
     );
@@ -92,7 +106,7 @@ const SleepAlarmItem = memo(function SleepAlarmItem({
 SleepAlarmItem.displayName = "SleepAlarmItem";
 
 function ListAlarmClock({ alarms, onEditAlarm, onAddNewAlarm }: Props) {
-    const { toggleAlarm } = useAlarms();
+    const { toggleAlarm, deleteAlarm } = useAlarms();
     const handleEditAlarm = useCallback(
         (alarm: SleepAlarm) => {
             onEditAlarm(alarm);
@@ -105,15 +119,22 @@ function ListAlarmClock({ alarms, onEditAlarm, onAddNewAlarm }: Props) {
         },
         [toggleAlarm]
     );
+    const handleDeleteAlarm = useCallback(
+        (id: string) => {
+            deleteAlarm(id);
+        },
+        [deleteAlarm]
+    );
     const renderItem = useCallback(
         ({ item }: { item: SleepAlarm }) => (
             <SleepAlarmItem
                 item={item}
                 onEdit={handleEditAlarm}
                 onToggle={handleToggleAlarm}
+                onDelete={handleDeleteAlarm}
             />
         ),
-        [handleEditAlarm, handleToggleAlarm]
+        [handleEditAlarm, handleToggleAlarm, handleDeleteAlarm]
     );
     const footer = useCallback(
         () => (

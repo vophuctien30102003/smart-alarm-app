@@ -75,14 +75,12 @@ export function useAlarmOverlay() {
         return `Snooze (${activeAlarm.snoozeDuration || 5} min)`;
     }, [activeAlarm?.snoozeEnabled, activeAlarm?.snoozeDuration]);
 
-    const handleStop = useCallback(() => {
-        stopAlarm();
+    const handleStop = useCallback(async () => {
+        await stopAlarm();
     }, [stopAlarm]);
 
     const handleSnooze = useCallback(() => {
-        if (activeAlarm?.snoozeEnabled) {
-            snoozeAlarm();
-        }
+        if (activeAlarm?.snoozeEnabled) snoozeAlarm();
     }, [activeAlarm?.snoozeEnabled, snoozeAlarm]);
 
     const isSnoozeEnabled = Boolean(activeAlarm?.snoozeEnabled);

@@ -80,7 +80,7 @@ export interface AlarmActions {
   deleteAlarm: (id: string) => Promise<void>;
   toggleAlarm: (id: string) => Promise<void>;
   triggerAlarm: (alarm: Alarm) => void;
-  stopAlarm: () => void;
+  stopAlarm: () => Promise<void>;
   snoozeAlarm: () => void;
   setupAlarmTracking: (alarm: Alarm) => Promise<void>;
   cleanupAlarmTracking: (alarm: Alarm) => Promise<void>;

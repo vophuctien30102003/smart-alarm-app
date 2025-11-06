@@ -1,10 +1,9 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
+import { NOTIFICATION_DATA_TYPES } from "../shared/constants";
 import { NotificationChannels } from "../shared/helpers/NotificationChannels";
-import { LocationAlarm, SleepAlarm, TimeAlarm } from "../shared/types/alarm.type";
+import { LocationAlarm, TimeAlarm } from "../shared/types/alarm.type";
 import { LocationAlarmScheduler } from "./schedulers/LocationAlarmScheduler";
-import { SleepAlarmScheduler } from "./schedulers/SleepAlarmScheduler";
-import { TimeAlarmScheduler } from "./schedulers/TimeAlarmScheduler";
 
 Notifications.setNotificationHandler({
     handleNotification: async () => {
@@ -32,13 +31,9 @@ export class NotificationManager {
     private isInitialized: boolean = false;
     private initializationPromise: Promise<boolean> | null = null;
 
-    private timeAlarmScheduler: TimeAlarmScheduler;
-    private sleepAlarmScheduler: SleepAlarmScheduler;
     private locationAlarmScheduler: LocationAlarmScheduler;
 
     private constructor() {
-        this.timeAlarmScheduler = new TimeAlarmScheduler();
-        this.sleepAlarmScheduler = new SleepAlarmScheduler();
         this.locationAlarmScheduler = new LocationAlarmScheduler();
     }
 
@@ -76,38 +71,48 @@ export class NotificationManager {
     private async setupNotificationChannels(): Promise<void> {
         await NotificationChannels.setup();
     }
-    async scheduleAlarmNotification(alarm: TimeAlarm): Promise<string | null> {
-        try {
-            await this.initialize();
-            const result = await this.timeAlarmScheduler.schedule(alarm);
-            return result.notificationIds?.[0] || null;
-        } catch (error) {
-            console.error("❌ Error scheduling alarm:", error);
-            return null;
-        }
-    }
-    async scheduleSleepAlarmNotifications(alarm: SleepAlarm): Promise<{
-        bedtimeIds: string[];
-        wakeIds: string[];
-    }> {
-        try {
-            await this.initialize();
-            const result = await this.sleepAlarmScheduler.schedule(alarm);
-            return {
-                bedtimeIds: result.bedtimeIds || [],
-                wakeIds: result.wakeIds || [],
-            };
-        } catch (error) {
-            console.error("❌ Error scheduling sleep alarm notifications:", error);
-            return { bedtimeIds: [], wakeIds: [] };
-        }
-    }
+    
+    // Note: Sleep alarm notifications are handled by PushSleepNotificationClient
+    // See: src/services/notifications/PushSleepNotificationClient.ts
 
-    async cancelSleepAlarmNotifications(
-        notificationIds: string[]
-    ): Promise<void> {
-        await this.sleepAlarmScheduler.cancel?.(notificationIds);
+    /**
+     * Schedule a time-based alarm notification
+     * @param alarm TimeAlarm to schedule
+     * @returns notification ID
+     */
+    async scheduleAlarmNotification(alarm: TimeAlarm): Promise<string> {
+        try {
+            await this.initialize();
+
+            const trigger: Notifications.NotificationTriggerInput = {
+                type: Notifications.SchedulableTriggerInputTypes.DATE,
+                date: new Date(alarm.time),
+            };
+
+            const content: Notifications.NotificationContentInput = {
+                title: alarm.label || "⏰ Alarm",
+                body: "Time to wake up!",
+                sound: true,
+                priority: Notifications.AndroidNotificationPriority.MAX,
+                data: {
+                    alarmId: alarm.id,
+                    type: NOTIFICATION_DATA_TYPES.TIME_ALARM,
+                },
+            };
+
+            const notificationId = await Notifications.scheduleNotificationAsync({
+                content,
+                trigger,
+            });
+
+            console.log(`📅 Scheduled time alarm notification: ${notificationId}`);
+            return notificationId;
+        } catch (error) {
+            console.error("❌ Error scheduling time alarm notification:", error);
+            throw error;
+        }
     }
+    
     async cancelAlarmNotification(notificationId: string): Promise<void> {
         try {
             await Notifications.cancelScheduledNotificationAsync(notificationId);

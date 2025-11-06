@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import notificationManager from '../services/NotificationManager';
+import pushSleepNotificationClient from '../services/notifications/PushSleepNotificationClient';
 import { useAlarmStore } from '../store/alarmStore';
 
 interface NotificationContextType {
@@ -25,12 +26,15 @@ interface Props {
 export const NotificationProvider: React.FC<Props> = ({ children }) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [hasPermission, setHasPermission] = useState(false);
-  const { triggerAlarm } = useAlarmStore();
+  const { triggerAlarm, stopAlarm, snoozeAlarm } = useAlarmStore();
 
   const initializeNotifications = useCallback(async () => {
     try {
-      const success = await notificationManager.initialize();
-      setHasPermission(success);
+      const [notifSuccess, sleepSuccess] = await Promise.all([
+        notificationManager.initialize(),
+        pushSleepNotificationClient.initialize(),
+      ]);
+      setHasPermission(notifSuccess && sleepSuccess);
       setIsInitialized(true);
     } catch (error) {
       console.error('❌ Error initializing notifications:', error);
@@ -53,6 +57,7 @@ export const NotificationProvider: React.FC<Props> = ({ children }) => {
       }
     };
 
+    // Handle expo-notifications (time alarms, location alarms)
     const responseSubscription = notificationManager.addNotificationResponseListener((response) => {
       handleNotification(response.notification.request.content.data as Record<string, unknown>);
     });
@@ -61,11 +66,32 @@ export const NotificationProvider: React.FC<Props> = ({ children }) => {
       handleNotification(notification.request.content.data as Record<string, unknown>);
     });
 
+    // Handle push-notifications (sleep alarms)
+    const unsubscribeReceived = pushSleepNotificationClient.onNotificationReceived((data) => {
+      console.log('🔔 Sleep alarm received:', data);
+      const alarms = useAlarmStore.getState().alarms;
+      const alarm = alarms.find(a => a.id === data.alarmId);
+      if (alarm) {
+        triggerAlarm(alarm);
+      }
+    });
+
+    const unsubscribeAction = pushSleepNotificationClient.onNotificationAction((data) => {
+      console.log('🎯 Sleep alarm action:', data);
+      if (data.action === 'Stop') {
+        void stopAlarm();
+      } else if (data.action === 'Snooze') {
+        snoozeAlarm();
+      }
+    });
+
     return () => {
       responseSubscription.remove();
       receivedSubscription.remove();
+      unsubscribeReceived();
+      unsubscribeAction();
     };
-  }, [initializeNotifications, triggerAlarm]);
+  }, [initializeNotifications, triggerAlarm, stopAlarm, snoozeAlarm]);
 
   const value = useMemo<NotificationContextType>(() => ({
     isInitialized,

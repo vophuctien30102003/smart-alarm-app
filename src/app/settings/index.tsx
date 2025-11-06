@@ -2,6 +2,7 @@ import { useState } from "react";
 import { View, Text, TouchableOpacity, Switch } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import Slider from "@react-native-community/slider";
+import NotificationTest from "@/components/test/NotificationTest";
 
 // const GENTLE_WAKE_OPTIONS = [0, 5, 10, 15];
 // const SNOOZE_OPTIONS = [5, 10, 15, 20];
@@ -55,7 +56,7 @@ export default function Settings() {
       </View>
 
       {/* Settings */}
-      <View className="flex-1 px-6">
+      {/* <View className="flex-1 px-6">
         <SettingItem
           icon="alarm-outline"
           label="Gentle wake up"
@@ -115,7 +116,8 @@ export default function Settings() {
             />
           }
         />
-      </View>
+      </View> */}
+      <NotificationTest />
     </View>
   );
 }

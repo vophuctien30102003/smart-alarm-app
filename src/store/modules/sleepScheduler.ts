@@ -1,8 +1,8 @@
-import notificationManager from '@/services/NotificationManager';
+import pushSleepNotificationClient from '@/services/notifications/PushSleepNotificationClient';
 import type { SleepAlarm } from '@/shared/types/alarm.type';
 
 export const scheduleSleepNotifications = async (alarm: SleepAlarm) => {
-  return notificationManager.scheduleSleepAlarmNotifications(alarm);
+  return pushSleepNotificationClient.scheduleSleepAlarm(alarm);
 };
 
 export const cancelSleepNotifications = async (alarm: SleepAlarm) => {
@@ -11,6 +11,6 @@ export const cancelSleepNotifications = async (alarm: SleepAlarm) => {
     ...(alarm.wakeNotificationIds ?? []),
   ];
   if (ids.length) {
-    await notificationManager.cancelSleepAlarmNotifications(ids);
+    await pushSleepNotificationClient.cancelNotifications(ids);
   }
 };

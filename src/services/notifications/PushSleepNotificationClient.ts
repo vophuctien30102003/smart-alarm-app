@@ -178,7 +178,9 @@ export class PushSleepNotificationClient implements SleepNotificationClient {
                     cb({
                         alarmId: data?.alarmId,
                         action,
+                        type: data?.type,
                         sleepEvent: data?.sleepEvent,
+                        extras: data,
                     });
                 } catch (error) {
                     console.error("❌ Error in action callback:", error);
@@ -365,7 +367,13 @@ export class PushSleepNotificationClient implements SleepNotificationClient {
     }
 
     onNotificationAction(
-        callback: (data: { alarmId: string; action: string }) => void
+        callback: (data: {
+            alarmId: string;
+            action: string;
+            type?: string;
+            sleepEvent?: "bedtime" | "wake";
+            extras?: Record<string, unknown>;
+        }) => void
     ): () => void {
         const id = Math.random().toString(36);
         this.actionCallbacks.set(id, callback);

@@ -11,6 +11,12 @@ export interface SleepNotificationClient {
     callback: (data: { alarmId: string; type: string; sleepEvent?: 'bedtime' | 'wake' }) => void
   ): () => void;
   onNotificationAction(
-    callback: (data: { alarmId: string; action: string }) => void
+    callback: (data: {
+      alarmId: string;
+      action: string;
+      type?: string;
+      sleepEvent?: 'bedtime' | 'wake';
+      extras?: Record<string, unknown>;
+    }) => void
   ): () => void;
 }

@@ -1,36 +1,101 @@
-import * as Notifications from "expo-notifications";
-import { NOTIFICATION_DATA_TYPES } from "../../shared/constants/alarmDefaults";
+import { resolveSound } from "@/shared/utils/soundUtils";
+import PushNotification from "react-native-push-notification";
+import {
+    NOTIFICATION_CONSTANTS,
+    NOTIFICATION_DATA_TYPES,
+} from "../../shared/constants/alarmDefaults";
 import { LocationAlarm } from "../../shared/types/alarm.type";
+import pushSleepNotificationClient from "../notifications/PushSleepNotificationClient";
 import { AlarmScheduler, SchedulingResult } from "./AlarmScheduler";
 
 export class LocationAlarmScheduler implements AlarmScheduler {
-    private createContent(alarm: LocationAlarm, title: string, body: string): Notifications.NotificationContentInput {
-        return {
-            title,
-            body,
-            sound: true,
-            priority: Notifications.AndroidNotificationPriority.HIGH,
-            data: {
-                alarmId: alarm.id,
-                alarmLabel: alarm.label,
-                alarmType: "location",
-                locationAddress: alarm.targetLocation?.address,
-                type: NOTIFICATION_DATA_TYPES.LOCATION_ALARM,
+    private isChannelCreated = false;
+
+    private ensureChannel(): void {
+        if (this.isChannelCreated) return;
+
+        PushNotification.createChannel(
+            {
+                channelId: NOTIFICATION_CONSTANTS.LOCATION_ALARM_CHANNEL_ID,
+                channelName: "Location Alarm Notifications",
+                channelDescription: "Alerts triggered by location-based alarms",
+                playSound: true,
+                soundName: "wake_up.mp3",
+                importance: 4,
+                vibrate: true,
             },
+            (created) => {
+                this.isChannelCreated = true;
+                console.log(`📡 Location alarm channel created: ${created}`);
+            }
+        );
+    }
+
+    private async ensureConfigured(): Promise<void> {
+        await pushSleepNotificationClient.initialize();
+        this.ensureChannel();
+    }
+
+    private buildNotificationData(alarm: LocationAlarm) {
+        return {
+            alarmId: alarm.id,
+            alarmLabel: alarm.label,
+            alarmType: "location",
+            locationAddress: alarm.targetLocation?.address,
+            type: NOTIFICATION_DATA_TYPES.LOCATION_ALARM,
         };
     }
 
-    async schedule(alarm: LocationAlarm, title: string, body: string): Promise<SchedulingResult> {
+    async schedule(
+        alarm: LocationAlarm,
+        title: string,
+        body: string
+    ): Promise<SchedulingResult> {
         try {
-            const content = this.createContent(alarm, title, body);
-            const notificationId = await Notifications.scheduleNotificationAsync({
-                content,
-                trigger: null,
+            await this.ensureConfigured();
+
+            const notificationId = Math.floor(Math.random() * 1000000).toString();
+            const data = this.buildNotificationData(alarm);
+            const sound = resolveSound(alarm.sound?.id);
+            const soundName = sound.filename ?? "wake_up.mp3";
+
+            PushNotification.localNotification({
+                channelId: NOTIFICATION_CONSTANTS.LOCATION_ALARM_CHANNEL_ID,
+                id: notificationId,
+                title,
+                message: body,
+                bigText: body,
+                playSound: true,
+                soundName,
+                priority: "high",
+                importance: 4,
+                vibrate: true,
+                vibration: 300,
+                allowWhileIdle: true,
+                invokeApp: true,
+                autoCancel: true,
+                actions: ["Stop"],
+                userInfo: { ...data, notificationId },
+                data: { ...data, notificationId },
             });
+
             return { notificationIds: [notificationId] };
         } catch (error) {
             console.error("❌ Error showing location alarm notification:", error);
             throw error;
         }
+    }
+
+    async cancel(notificationIds: string[] = []): Promise<void> {
+        if (!notificationIds.length) return;
+
+        notificationIds.forEach((id) => {
+            const numericId = parseInt(id, 10);
+            if (!Number.isNaN(numericId)) {
+                PushNotification.cancelLocalNotification(String(numericId));
+            } else {
+                PushNotification.cancelLocalNotification(id);
+            }
+        });
     }
 }

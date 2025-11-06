@@ -1,3 +1,4 @@
+import { NOTIFICATION_DATA_TYPES } from '@/shared/constants';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import notificationManager from '../services/NotificationManager';
 import pushSleepNotificationClient from '../services/notifications/PushSleepNotificationClient';
@@ -68,6 +69,10 @@ export const NotificationProvider: React.FC<Props> = ({ children }) => {
 
     // Handle push-notifications (sleep alarms)
     const unsubscribeReceived = pushSleepNotificationClient.onNotificationReceived((data) => {
+      if (data.type !== NOTIFICATION_DATA_TYPES.SLEEP_ALARM) {
+        return;
+      }
+
       console.log('🔔 Sleep alarm received:', data);
       const alarms = useAlarmStore.getState().alarms;
       const alarm = alarms.find(a => a.id === data.alarmId);
@@ -77,10 +82,12 @@ export const NotificationProvider: React.FC<Props> = ({ children }) => {
     });
 
     const unsubscribeAction = pushSleepNotificationClient.onNotificationAction((data) => {
-      console.log('🎯 Sleep alarm action:', data);
       if (data.action === 'Stop') {
         void stopAlarm();
-      } else if (data.action === 'Snooze') {
+        return;
+      }
+
+      if (data.action === 'Snooze' && data.type === NOTIFICATION_DATA_TYPES.SLEEP_ALARM) {
         snoozeAlarm();
       }
     });

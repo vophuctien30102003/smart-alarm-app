@@ -11,11 +11,11 @@ import { Ionicons } from '@expo/vector-icons';
 import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
-    ActivityIndicator,
-    SafeAreaView,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  SafeAreaView,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -28,7 +28,7 @@ interface SearchLocationBottomSheetProps {
 
 const SearchLocationBottomSheet: React.FC<SearchLocationBottomSheetProps> = ({ currentLocation }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const { results, loading } = useMapboxSearch(searchQuery);
+  const { results, loading } = useMapboxSearch(searchQuery, currentLocation ?? undefined);
   const { selectedDestination, setSelectedDestination } = useLocationStore();
   const setCurrentView = useMapAlarmStore(mapAlarmActions.setCurrentView);
   const setSelectedLocation = useMapAlarmStore(mapAlarmActions.setSelectedLocation);

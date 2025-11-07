@@ -23,7 +23,7 @@ export const NOTIFICATION_CONSTANTS = {
   ALARM_CHANNEL_ID: 'alarm-notifications', // General alarm channel
   TIME_ALARM_CHANNEL_ID: 'time-alarms',
   SLEEP_ALARM_CHANNEL_ID: 'sleep-alarms',
-  LOCATION_ALARM_CHANNEL_ID: 'location-alarms',
+  LOCATION_ALARM_CHANNEL_ID: 'location-alarms-v1',
   VIBRATION_PATTERN: [0, 250, 250, 250] as const,
 } as const;
 

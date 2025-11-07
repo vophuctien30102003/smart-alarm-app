@@ -209,9 +209,7 @@ class LocationAlarmService {
     }
   }
 
-  private async triggerLocationAlarm(alarm: LocationAlarm, config: LocationAlarmStatus): Promise<void> {
-    console.log(`Triggering location alarm: ${alarm.label}`);
-    
+  private async triggerLocationAlarm(alarm: LocationAlarm, config: LocationAlarmStatus): Promise<void> {    
     const title = alarm.arrivalTrigger 
       ? `Arrived at ${alarm.targetLocation?.address || 'destination'}!`
       : `Left ${alarm.targetLocation?.address || 'location'}!`;

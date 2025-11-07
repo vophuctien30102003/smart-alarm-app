@@ -1,6 +1,8 @@
 import { debounce, SearchBoxCore, SessionToken } from "@mapbox/search-js-core";
 import Constants from "expo-constants";
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+import type { Coordinates } from "@/shared/types/alarmLocation.type";
 
 const MAPBOX_TOKEN = String(Constants.expoConfig?.extra?.mapboxAccessToken);
 const search = new SearchBoxCore({ accessToken: MAPBOX_TOKEN });
@@ -16,14 +18,15 @@ export interface MapboxSearchResult {
     mapbox_id: string;
 }
 
-export const useMapboxSearch = (query: string) => {
+export const useMapboxSearch = (query: string, userLocation?: Coordinates | null) => {
     const [results, setResults] = useState<MapboxSearchResult[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const sessionTokenRef = useRef<SessionToken>(new SessionToken());
 
-    const debouncedSearch = useCallback(
-        debounce(async (searchQuery: string) => {
+    const debouncedSearch = useMemo(
+        () =>
+            debounce(async (searchQuery: string) => {
             if (!searchQuery.trim()) {
                 setResults([]);
                 return;
@@ -34,7 +37,12 @@ export const useMapboxSearch = (query: string) => {
                 setError(null);
 
                 const sessionToken = sessionTokenRef.current;
-                const result = await search.suggest(searchQuery, { sessionToken });
+                const result = await search.suggest(searchQuery, {
+                    sessionToken,
+                    proximity: userLocation
+                        ? [userLocation.longitude, userLocation.latitude]
+                        : undefined,
+                });
 
                 const formattedResults = await Promise.all(
                     result.suggestions.map(async (suggestion) => {
@@ -71,13 +79,12 @@ export const useMapboxSearch = (query: string) => {
                 setResults(validResults);
 
             } catch (err) {
-                console.error("Search error:", err);
                 setError("Failed to fetch search results");
             } finally {
                 setLoading(false);
             }
         }, 1500),
-        []
+    [userLocation]
     );
 
     const resetSession = useCallback(() => {
@@ -91,6 +98,12 @@ export const useMapboxSearch = (query: string) => {
             sessionTokenRef.current = new SessionToken();
         };
     }, []);
+
+    useEffect(() => {
+        if (userLocation) {
+            sessionTokenRef.current = new SessionToken();
+        }
+    }, [userLocation]);
 
     useEffect(() => {
         debouncedSearch(query);

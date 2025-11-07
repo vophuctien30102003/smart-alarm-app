@@ -1,5 +1,6 @@
 import { useActiveAlarm } from '@/hooks/useAlarms';
 import AlarmSoundService from '@/services/AlarmSoundService';
+import { isLocationAlarm } from '@/shared/types/alarm.type';
 import { memo, useEffect, useRef } from 'react';
 
 function AlarmPlayerComponent() {
@@ -8,7 +9,7 @@ function AlarmPlayerComponent() {
     
     useEffect(() => {
         const alarmId = activeAlarm?.id ?? '';
-        const shouldPlay = !!(activeAlarm && isPlaying);
+    const shouldPlay = !!(activeAlarm && isPlaying && !isLocationAlarm(activeAlarm));
         
         // Skip if no state change
         if (lastStateRef.current.alarmId === alarmId && 

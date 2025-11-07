@@ -19,16 +19,7 @@ export class NotificationChannels {
             }
         );
 
-        await Notifications.setNotificationChannelAsync(
-            NOTIFICATION_CONSTANTS.LOCATION_ALARM_CHANNEL_ID,
-            {
-                name: "Location Alarm Notifications",
-                importance: Notifications.AndroidImportance.HIGH,
-                vibrationPattern: [...NOTIFICATION_CONSTANTS.VIBRATION_PATTERN],
-                lightColor: "#FF6B35",
-                sound: "default",
-                enableVibrate: true,
-            }
-        );
+        // Location alarms now rely on react-native-push-notification to create
+        // their channel so actions and custom sounds are preserved.
     }
 }

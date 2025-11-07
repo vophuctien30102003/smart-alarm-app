@@ -16,9 +16,12 @@ import type { SleepNotificationClient } from "./SleepNotificationClient";
 
 const getNextDateForTime = (timeString: string, referenceDate?: Date): Date => {
     const { hours, minutes } = parseTimeString(timeString);
-    const date = referenceDate ? new Date(referenceDate) : new Date();
+    const date = referenceDate ? new Date(referenceDate) : new Date();    
     date.setHours(hours, minutes, 0, 0);
     if (!referenceDate && date <= new Date()) {
+        date.setDate(date.getDate() + 1);
+    }
+    else if (referenceDate && date <= referenceDate) {
         date.setDate(date.getDate() + 1);
     }
     return date;
@@ -149,7 +152,6 @@ export class PushSleepNotificationClient implements SleepNotificationClient {
         }
         if (action === "Snooze") {
             const snoozeId = Math.floor(Math.random() * 1000000);
-            // const snoozeDate = new Date(Date.now() + 10 * 60 * 1000);
             const snoozeDate = new Date(Date.now() + 10 * 1000);
 
             PushNotification.localNotificationSchedule({
@@ -190,6 +192,9 @@ export class PushSleepNotificationClient implements SleepNotificationClient {
     }
 
     private playAlarmSound(data: any): void {
+        if (data?.type !== NOTIFICATION_DATA_TYPES.SLEEP_ALARM) {
+            return;
+        }
         try {
             const alarmConfig = {
                 sound: undefined,
@@ -283,11 +288,21 @@ export class PushSleepNotificationClient implements SleepNotificationClient {
                     : getNextWeekDay(repeatDay);
             const bedtimeId = Math.floor(Math.random() * 1000000);
             const wakeId = Math.floor(Math.random() * 1000000);
+            const bedtimeDate = getDateForWeekDay(
+                repeatDay,
+                bedtimeHour,
+                bedtimeMinute
+            );
+            const wakeDate = getDateForWeekDay(
+                wakeDay,
+                wakeHour,
+                wakeMinute
+            );
             this.scheduleNotification(
                 bedtimeId,
                 "🛌 Bedtime Alarm",
                 `It's time for bed. Sleep schedule: ${sleepDurationDisplay} hours.`,
-                getDateForWeekDay(repeatDay, bedtimeHour, bedtimeMinute),
+                bedtimeDate,
                 buildNotificationData(alarm, "bedtime", { repeatDay }),
                 "week"
             );
@@ -295,7 +310,7 @@ export class PushSleepNotificationClient implements SleepNotificationClient {
                 wakeId,
                 "☀️ Wake Up Alarm",
                 "It's time to wake up. Have a great day!",
-                getDateForWeekDay(wakeDay, wakeHour, wakeMinute),
+                wakeDate,
                 buildNotificationData(alarm, "wake", { repeatDay: wakeDay }),
                 "week"
             );
@@ -335,17 +350,12 @@ export class PushSleepNotificationClient implements SleepNotificationClient {
                 wakeMinute
             );
         } catch (error) {
-            console.error(
-                "❌ Error scheduling sleep alarm notifications:",
-                error
-            );
             throw error;
         }
     }
 
     async cancelNotifications(notificationIds: string[]): Promise<void> {
         if (!notificationIds.length) return;
-
         notificationIds.forEach((id) => {
             const numericId = parseInt(id, 10);
             if (!isNaN(numericId)) {
@@ -380,6 +390,4 @@ export class PushSleepNotificationClient implements SleepNotificationClient {
         return () => this.actionCallbacks.delete(id);
     }
 }
-
-// Export singleton instance
 export default new PushSleepNotificationClient();

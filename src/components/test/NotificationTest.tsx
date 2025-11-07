@@ -3,11 +3,11 @@ import { useCallback, useEffect, useRef } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import PushNotification from 'react-native-push-notification';
 
-const CHANNEL_ID = 'alarm-channel-v2';
+const CHANNEL_ID = 'alarm-channel-v3';
 
 const NotificationTest = () => {
   const soundRef = useRef<Audio.Sound | null>(null);
-  const soundFile = require('@/assets/sound/wake_up.mp3');
+  const soundFile = require('@/assets/sound/alarm_clock.mp3');
 
   const setupAudio = useCallback(async () => {
     try {
@@ -60,8 +60,8 @@ const NotificationTest = () => {
         channelName: 'Alarm Channel',
         channelDescription: 'Channel for alarm notifications',
         playSound: true,
-        soundName: 'wake_up', // matches android/app/src/main/res/raw/wake_up.mp3
-        importance: 4,
+        soundName: 'alarm_clock.mp3',
+        importance: 5,
         vibrate: true,
       },
       (created) => console.log(`📡 Channel created: ${created}`)
@@ -87,7 +87,9 @@ const NotificationTest = () => {
               title: '⏰ Alarm Snoozed',
               message: 'Alarm will ring again in 10 seconds!',
               date: new Date(Date.now() + 10000),
-              playSound: false,
+              playSound: true,
+              loopSound: true,
+              soundName: 'alarm_clock.mp3',
               actions: ['Snooze', 'Stop'],
               vibrate: true,
               vibration: 1000,
@@ -135,10 +137,11 @@ const NotificationTest = () => {
       id: 1,
       title: '🔔 Alarm Notification',
       message: 'Wake up! Tap Snooze or Stop!',
-      bigText: 'Default alarm using wake_up.mp3',
+      bigText: 'Default alarm using alarm_clock.mp3',
       subText: 'Alarm Test',
       playSound: true,
-      soundName: 'wake_up',
+      soundName: 'alarm_clock.mp3',
+      loopSound: true,
       actions: ['Snooze', 'Stop'],
       date: scheduledDate,
       allowWhileIdle: true,
@@ -155,6 +158,7 @@ const NotificationTest = () => {
     void setupAudio();
     configurePushNotification();
     createNotificationChannel();
+    PushNotification.deleteChannel('alarm-channel');
 
     return () => {
       PushNotification.cancelAllLocalNotifications();

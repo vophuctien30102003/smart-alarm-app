@@ -10,9 +10,24 @@ import { AlarmScheduler, SchedulingResult } from "./AlarmScheduler";
 
 export class LocationAlarmScheduler implements AlarmScheduler {
     private isChannelCreated = false;
+    private currentChannelSound: string | null = null;
 
-    private ensureChannel(): void {
-        if (this.isChannelCreated) return;
+    private ensureChannel(soundName: string): void {
+        if (this.isChannelCreated && this.currentChannelSound === soundName) {
+            return;
+        }
+
+        if (this.isChannelCreated && this.currentChannelSound !== soundName) {
+            PushNotification.deleteChannel(
+                NOTIFICATION_CONSTANTS.LOCATION_ALARM_CHANNEL_ID
+            );
+            this.isChannelCreated = false;
+            this.currentChannelSound = null;
+        }
+
+        if (this.isChannelCreated) {
+            return;
+        }
 
         PushNotification.createChannel(
             {
@@ -20,20 +35,22 @@ export class LocationAlarmScheduler implements AlarmScheduler {
                 channelName: "Location Alarm Notifications",
                 channelDescription: "Alerts triggered by location-based alarms",
                 playSound: true,
-                soundName: "wake_up.mp3",
+                loopSound: true,
+                soundName,
                 importance: 4,
                 vibrate: true,
             },
             (created) => {
                 this.isChannelCreated = true;
+                this.currentChannelSound = soundName;
                 console.log(`📡 Location alarm channel created: ${created}`);
             }
         );
     }
 
-    private async ensureConfigured(): Promise<void> {
+    private async ensureConfigured(soundName: string): Promise<void> {
         await pushSleepNotificationClient.initialize();
-        this.ensureChannel();
+        this.ensureChannel(soundName);
     }
 
     private buildNotificationData(alarm: LocationAlarm) {
@@ -52,12 +69,13 @@ export class LocationAlarmScheduler implements AlarmScheduler {
         body: string
     ): Promise<SchedulingResult> {
         try {
-            await this.ensureConfigured();
-
             const notificationId = Math.floor(Math.random() * 1000000).toString();
             const data = this.buildNotificationData(alarm);
             const sound = resolveSound(alarm.sound?.id);
-            const soundName = sound.filename ?? "wake_up.mp3";
+            const soundName =  "alarm_clock.mp3";
+            
+
+            await this.ensureConfigured(soundName);
 
             PushNotification.localNotification({
                 channelId: NOTIFICATION_CONSTANTS.LOCATION_ALARM_CHANNEL_ID,

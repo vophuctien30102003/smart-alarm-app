@@ -14,6 +14,7 @@ export type LegacySound = Sound;
 export interface AlarmSound {
   id: string;
   name: string;
+  filename?: string;
   uri: SoundUri;
   isDefault?: boolean;
 }

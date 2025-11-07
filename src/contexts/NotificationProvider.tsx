@@ -46,7 +46,6 @@ export const NotificationProvider: React.FC<Props> = ({ children }) => {
 
   useEffect(() => {
     initializeNotifications();
-
     const handleNotification = (data: Record<string, unknown> | undefined) => {
       const alarmId = data?.alarmId;
       if (typeof alarmId === 'string') {
@@ -57,41 +56,31 @@ export const NotificationProvider: React.FC<Props> = ({ children }) => {
         }
       }
     };
-
-    // Handle expo-notifications (time alarms, location alarms)
     const responseSubscription = notificationManager.addNotificationResponseListener((response) => {
       handleNotification(response.notification.request.content.data as Record<string, unknown>);
     });
-
     const receivedSubscription = notificationManager.addNotificationReceivedListener((notification) => {
       handleNotification(notification.request.content.data as Record<string, unknown>);
     });
-
-    // Handle push-notifications (sleep alarms)
     const unsubscribeReceived = pushSleepNotificationClient.onNotificationReceived((data) => {
       if (data.type !== NOTIFICATION_DATA_TYPES.SLEEP_ALARM) {
         return;
       }
-
-      console.log('🔔 Sleep alarm received:', data);
       const alarms = useAlarmStore.getState().alarms;
       const alarm = alarms.find(a => a.id === data.alarmId);
       if (alarm) {
         triggerAlarm(alarm);
       }
     });
-
     const unsubscribeAction = pushSleepNotificationClient.onNotificationAction((data) => {
       if (data.action === 'Stop') {
         void stopAlarm();
         return;
       }
-
       if (data.action === 'Snooze' && data.type === NOTIFICATION_DATA_TYPES.SLEEP_ALARM) {
         snoozeAlarm();
       }
     });
-
     return () => {
       responseSubscription.remove();
       receivedSubscription.remove();

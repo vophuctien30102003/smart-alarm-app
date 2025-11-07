@@ -1,8 +1,7 @@
+import type { Coordinates } from "@/shared/types/alarmLocation.type";
 import { debounce, SearchBoxCore, SessionToken } from "@mapbox/search-js-core";
 import Constants from "expo-constants";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-
-import type { Coordinates } from "@/shared/types/alarmLocation.type";
 
 const MAPBOX_TOKEN = String(Constants.expoConfig?.extra?.mapboxAccessToken);
 const search = new SearchBoxCore({ accessToken: MAPBOX_TOKEN });
@@ -31,11 +30,9 @@ export const useMapboxSearch = (query: string, userLocation?: Coordinates | null
                 setResults([]);
                 return;
             }
-
             try {
                 setLoading(true);
                 setError(null);
-
                 const sessionToken = sessionTokenRef.current;
                 const result = await search.suggest(searchQuery, {
                     sessionToken,
@@ -43,19 +40,15 @@ export const useMapboxSearch = (query: string, userLocation?: Coordinates | null
                         ? [userLocation.longitude, userLocation.latitude]
                         : undefined,
                 });
-
                 const formattedResults = await Promise.all(
                     result.suggestions.map(async (suggestion) => {
                         try {
                             const { features } = await search.retrieve(suggestion, { sessionToken });
-                            
                             if (features.length > 0) {
                                 const feature = features[0];
                                 const [longitude, latitude] = feature.geometry.coordinates;
-                                
                                 const externalId = suggestion.external_ids ? 
                                     Object.values(suggestion.external_ids)[0] : "";
-                                
                                 return {
                                     id: suggestion.mapbox_id || externalId || `${Date.now()}-${Math.random()}`,
                                     name: suggestion.name || "Unknown place",
@@ -68,18 +61,17 @@ export const useMapboxSearch = (query: string, userLocation?: Coordinates | null
                                 } as MapboxSearchResult;
                             }
                             return null;
-                        } catch (retrieveError) {
-                            console.warn("Failed to retrieve feature for suggestion:", suggestion.name, retrieveError);
+                        } catch (error) {
+                            console.warn("Failed to retrieve feature for suggestion:", suggestion.name, error);
                             return null;
                         }
                     })
                 );
-
                 const validResults = formattedResults.filter((result): result is MapboxSearchResult => result !== null);
                 setResults(validResults);
 
-            } catch (err) {
-                setError("Failed to fetch search results");
+            } catch (error) {
+                console.error("Failed to fetch search results", error);
             } finally {
                 setLoading(false);
             }

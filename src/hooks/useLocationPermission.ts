@@ -1,8 +1,7 @@
+import { Coordinates } from '@/shared/types/alarmLocation.type';
 import * as Location from 'expo-location';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert } from 'react-native';
-
-import { Coordinates } from '@/shared/types/alarmLocation.type';
 
 type UseLocationPermissionResult = {
 	hasLocationPermission: boolean;
@@ -13,11 +12,9 @@ type UseLocationPermissionResult = {
 const useLocationPermission = (): UseLocationPermissionResult => {
 	const [hasLocationPermission, setHasLocationPermission] = useState(false);
 	const [currentLocation, setCurrentLocation] = useState<Coordinates | null>(null);
-
 	const requestPermission = useCallback(async () => {
 		try {
 			const { status } = await Location.requestForegroundPermissionsAsync();
-
 			if (status !== 'granted') {
 				setHasLocationPermission(false);
 				setCurrentLocation(null);
@@ -28,13 +25,10 @@ const useLocationPermission = (): UseLocationPermissionResult => {
 				);
 				return;
 			}
-
 			setHasLocationPermission(true);
-
 			const position = await Location.getCurrentPositionAsync({
 				accuracy: Location.Accuracy.High,
 			});
-
 			setCurrentLocation({
 				latitude: position.coords.latitude,
 				longitude: position.coords.longitude,
@@ -43,7 +37,6 @@ const useLocationPermission = (): UseLocationPermissionResult => {
 			console.error('Error requesting location permission:', error);
 		}
 	}, []);
-
 	useEffect(() => {
 		void requestPermission();
 		// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -55,5 +48,4 @@ const useLocationPermission = (): UseLocationPermissionResult => {
 		requestPermission,
 	};
 };
-
 export default useLocationPermission;

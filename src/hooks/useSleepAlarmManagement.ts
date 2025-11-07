@@ -19,7 +19,6 @@ export const useSleepAlarmManagement = () => {
       type: AlarmType.SLEEP,
       repeatDays: alarmData.selectedDays 
     });
-
     try {
       if (editingAlarmId) {
         await updateAlarm(editingAlarmId, {

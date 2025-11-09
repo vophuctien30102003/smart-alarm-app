@@ -42,9 +42,6 @@ const SleepAlarmItem = memo(function SleepAlarmItem({
             <View className="flex-row justify-between items-center mb-3">
                 <View className="flex-1">
                     <Text className="text-white text-base font-semibold">
-                        {item.label || "Sleep schedule"}
-                    </Text>
-                    <Text className="text-gray-400 text-xs mt-1">
                         {repeatSummary}
                     </Text>
                 </View>
@@ -53,7 +50,7 @@ const SleepAlarmItem = memo(function SleepAlarmItem({
                     onValueChange={() => onToggle(item.id)}
                 />
             </View>
-            <View className="flex-row justify-between bg-white/5 rounded-xl p-3">
+            <View className="flex-row justify-between rounded-xl">
                 <View className="flex-1 justify-center items-center">
                     <View className="flex-row items-center mb-1 gap-2">
                         <Moon size="24" color="#f5ce85" variant="Bold" />
@@ -65,7 +62,6 @@ const SleepAlarmItem = memo(function SleepAlarmItem({
                         {item.bedtime}
                     </Text>
                 </View>
-                <View className="w-px bg-white/10" />
                 <View className="flex-1  justify-center items-center">
                     <View className="flex-row items-center mb-1 gap-2">
                         <Sun1 size="24" color="#f5ce85" variant="Bold" />
@@ -83,22 +79,24 @@ const SleepAlarmItem = memo(function SleepAlarmItem({
                     Sleep duration ·{" "}
                     {formatDurationFromMinutes(durationMinutes)}
                 </Text>
-                <TouchableOpacity
-                    onPress={() => onEdit(item)}
-                    className="px-3 py-1 rounded-full bg-white/10"
-                >
-                    <Text className="text-[#8179FF] text-xs font-semibold">
-                        Edit
-                    </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    onPress={() => onDelete(item.id)}
-                    className="px-3 py-1 rounded-full bg-white/10"
-                >
-                    <Text className="text-[#f01c38] text-xs font-semibold">
-                        Delete
-                    </Text>
-                </TouchableOpacity>
+                <View className="flex-row gap-3">
+                    <TouchableOpacity
+                        onPress={() => onEdit(item)}
+                        className="px-3 py-1 rounded-full bg-white/10"
+                    >
+                        <Text className="text-[#8179FF] text-xs font-semibold">
+                            Edit
+                        </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => onDelete(item.id)}
+                        className="px-3 py-1 rounded-full bg-white/10"
+                    >
+                        <Text className="text-[#f01c38] text-xs font-semibold">
+                            Delete
+                        </Text>
+                    </TouchableOpacity>
+                </View>
             </View>
         </View>
     );

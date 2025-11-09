@@ -69,7 +69,7 @@ export default function MapScreen() {
                   ? [currentLocation.longitude, currentLocation.latitude]
                   : undefined
               }
-              followZoomLevel={16}
+              followZoomLevel={12}
             />
             <LocationPuck puckBearingEnabled puckBearing="heading" pulsing={{ isEnabled: true }} />
             <ShapeSource id="scooters" />

@@ -9,6 +9,7 @@ import { ScrollView, TouchableOpacity, View } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { useSleepAlarmForm } from '@/hooks/useSleepAlarmForm';
 import { CustomAlarmClock } from '../components/CustomAlarmClock';
+import { days } from '@/shared/constants/dayInWeek';
 
 interface Props {
     onSave: (alarmData: SleepAlarmFormData) => void;
@@ -33,17 +34,7 @@ export default function SetAlarmScreen({ onSave, onBack, initialData }: Props) {
         isPickerVisibleFor,
     } = state;
 
-    const days = [
-        { key: WeekDay.MONDAY, label: 'Mo' },
-        { key: WeekDay.TUESDAY, label: 'Tu' },
-        { key: WeekDay.WEDNESDAY, label: 'We' },
-        { key: WeekDay.THURSDAY, label: 'Th' },
-        { key: WeekDay.FRIDAY, label: 'Fr' },
-        { key: WeekDay.SATURDAY, label: 'Sa' },
-        { key: WeekDay.SUNDAY, label: 'Su' },
-    ];
-
-    const { toggleDay, adjustBedtime, adjustWakeTime } = actions;
+    const { toggleDay } = actions;
 
     const handleSave = () => {
         const alarmData = actions.createFormData();
@@ -102,62 +93,34 @@ export default function SetAlarmScreen({ onSave, onBack, initialData }: Props) {
                     ))}
                 </View>
 
-                <View className="flex-row justify-between mb-10">
-                    <View className="flex-1 items-center">
+                <View className="flex-row justify-between mb-10 gap-6">
+                    <TouchableOpacity onPress={() => actions.setPickerVisibleFor('bedtime')}  className="flex-1 items-center border border-solid border-[#9887C3] rounded-xl py-2 bg-white/5">
                         <View className="flex-row items-center mb-2.5">
                             <Text className="text-base mr-2">🌙</Text>
                             <Text className="text-white text-base font-medium">
                                 Bedtime
                             </Text>
                         </View>
-                        <TouchableOpacity onPress={() => actions.setPickerVisibleFor('bedtime')}>
+                        <View>
                             <Text className="text-white text-4xl font-light">
                                 {bedtime}
                             </Text>
-                        </TouchableOpacity>
-                        <View className="flex-row items-center mt-3">
-                            <TouchableOpacity
-                                onPress={() => adjustBedtime(-15)}
-                                className="px-3 py-1 rounded-full bg-white/10 mr-2"
-                            >
-                                <Text className="text-white text-sm">-15m</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={() => adjustBedtime(15)}
-                                className="px-3 py-1 rounded-full bg-white/10"
-                            >
-                                <Text className="text-white text-sm">+15m</Text>
-                            </TouchableOpacity>
                         </View>
-                    </View>
+                    </TouchableOpacity>
 
-                    <View className="flex-1 items-center">
-                        <View className="flex-row items-center mb-2.5">
+                    <TouchableOpacity onPress={() => actions.setPickerVisibleFor('wake')} className="flex-1 items-center border border-solid border-[#9887C3] rounded-xl py-2 bg-white/5">
+                        <View className="flex-row items-center mb-2.5 ">
                             <Text className="text-base mr-2">☀️</Text>
                             <Text className="text-white text-base font-medium">
                                 Wake up
                             </Text>
                         </View>
-                        <TouchableOpacity onPress={() => actions.setPickerVisibleFor('wake')}>
+                        <View>
                             <Text className="text-white text-4xl font-light">
                                 {wakeTime}
                             </Text>
-                        </TouchableOpacity>
-                        <View className="flex-row items-center mt-3">
-                            <TouchableOpacity
-                                onPress={() => adjustWakeTime(-15)}
-                                className="px-3 py-1 rounded-full bg-white/10 mr-2"
-                            >
-                                <Text className="text-white text-sm">-15m</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={() => adjustWakeTime(15)}
-                                className="px-3 py-1 rounded-full bg-white/10"
-                            >
-                                <Text className="text-white text-sm">+15m</Text>
-                            </TouchableOpacity>
                         </View>
-                    </View>
+                    </TouchableOpacity>
                 </View>
 
                 <View className="items-center mb-10 h-[200px]">

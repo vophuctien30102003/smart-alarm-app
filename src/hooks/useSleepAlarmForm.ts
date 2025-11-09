@@ -6,8 +6,8 @@ import { useMemo, useReducer } from 'react';
 export type PickerTarget = 'bedtime' | 'wake' | null;
 
 const DEFAULTS = {
-  BEDTIME: '22:15',
-  WAKE_TIME: '06:15',
+  BEDTIME: new Date().getHours() < 12 ? '22:30' : '23:30',
+  WAKE_TIME: new Date().getHours() < 12 ? '07:00' : '08:00',
   SNOOZE_MINUTES: 10,
   VOLUME: 0.8,
   SOUND_ID: 'sound_0',

@@ -57,7 +57,6 @@ const SetAlarmBottomSheet: React.FC<SetAlarmBottomSheetProps> = ({ isVisible, on
   const availableSounds = useMemo(() => getAllSounds(), []);
   const defaultSoundId = availableSounds[0]?.id ?? resolveSoundId();
 
-  const [lineName, setLineName] = useState('');
   const [timeBeforeArrival, setTimeBeforeArrival] = useState(5);
   const [radius, setRadius] = useState(500);
   const [selectedSoundId, setSelectedSoundId] = useState(defaultSoundId);
@@ -71,13 +70,11 @@ const SetAlarmBottomSheet: React.FC<SetAlarmBottomSheetProps> = ({ isVisible, on
 
   useEffect(() => {
     if (editingAlarm) {
-      setLineName(editingAlarm.label);
       setTimeBeforeArrival(editingAlarm.timeBeforeArrival ?? 5);
       setRadius(editingAlarm.radiusMeters ?? 500);
       setRepeat(enumToLegacyRepeat(editingAlarm.repeatType));
       setSelectedSoundId(resolveSoundId(editingAlarm.sound?.id));
     } else {
-      setLineName('');
       setTimeBeforeArrival(5);
       setRadius(500);
       setSelectedSoundId(defaultSoundId);
@@ -90,11 +87,6 @@ const SetAlarmBottomSheet: React.FC<SetAlarmBottomSheetProps> = ({ isVisible, on
 
     if (!location) {
       Alert.alert('Error', 'No location selected');
-      return;
-    }
-
-    if (!lineName.trim()) {
-      Alert.alert('Error', 'Please enter a line name');
       return;
     }
 
@@ -115,7 +107,7 @@ const SetAlarmBottomSheet: React.FC<SetAlarmBottomSheetProps> = ({ isVisible, on
       const selectedAlarmSound = convertSoundToAlarmSound(selectedSound);
       const repeatType = legacyRepeatToEnum(repeat);
       const labelToUse = formatAlarmLabel({
-        label: lineName,
+        // label: lineName,
         type: AlarmType.LOCATION,
       });
 
@@ -217,7 +209,7 @@ const SetAlarmBottomSheet: React.FC<SetAlarmBottomSheetProps> = ({ isVisible, on
               style={{ backgroundColor: '#1f2937' }}
             >
               {location && (
-                <View className="bg-gray-800 p-4 rounded-xl mb-6">
+                <View className="bg-gray-800 rounded-xl mb-6">
                   <Text className="text-white text-lg font-bold mb-2">Destination</Text>
                   <Text className="text-white text-base font-medium">{location.name}</Text>
                   <Text className="text-gray-300 text-sm mt-1">{location.address}</Text>
@@ -234,18 +226,7 @@ const SetAlarmBottomSheet: React.FC<SetAlarmBottomSheetProps> = ({ isVisible, on
                 </View>
               )}
 
-              <View className="mb-6">
-                <Text className="text-white text-base font-medium mb-2">Line Name *</Text>
-                <TextInput
-                  className="bg-gray-800 text-white p-3 rounded-xl text-base"
-                  placeholder="e.g., Line 41, Bus Route 15"
-                  placeholderTextColor="#9CA3AF"
-                  value={lineName}
-                  onChangeText={setLineName}
-                />
-              </View>
-
-              <View className="mb-6">
+              {/* <View className="mb-6">
                 <Text className="text-white text-base font-medium mb-3">
                   Time Before Arrival: {timeBeforeArrival} min
                 </Text>
@@ -262,7 +243,7 @@ const SetAlarmBottomSheet: React.FC<SetAlarmBottomSheetProps> = ({ isVisible, on
                     </TouchableOpacity>
                   ))}
                 </View>
-              </View>
+              </View> */}
 
               <View className="mb-6">
                 <Text className="text-white text-base font-medium mb-2">
@@ -286,7 +267,6 @@ const SetAlarmBottomSheet: React.FC<SetAlarmBottomSheetProps> = ({ isVisible, on
 
               <View className="mb-6">
                 <Text className="text-white text-base font-medium mb-3">Alarm Sound</Text>
-                <Text className="text-gray-300 text-sm mb-3">Current: {selectedSound.title}</Text>
                 <View className="flex-row flex-wrap gap-2">
                   {soundOptions.map(soundOption => (
                     <TouchableOpacity

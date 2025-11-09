@@ -65,7 +65,6 @@ export const CustomAlarmClock = ({
 
   return (
     <View className="mt-8">
-      {/* Header */}
       <View className="flex-row justify-between items-center py-3">
         <Text className="text-[#F8FAFC] text-[17px] font-semibold">
           Custom alarm

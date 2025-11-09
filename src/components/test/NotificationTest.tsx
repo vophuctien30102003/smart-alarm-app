@@ -168,7 +168,7 @@ const NotificationTest = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>🔔 Alarm Notification Test</Text>
+      <Text style={styles.title}>🔔 Alarm Notification</Text>
 
       <Pressable
         style={[styles.button, styles.primaryButton]}

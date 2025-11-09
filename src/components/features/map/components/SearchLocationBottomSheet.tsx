@@ -228,9 +228,6 @@ const SearchLocationBottomSheet: React.FC<SearchLocationBottomSheetProps> = ({ c
 
               {selectedDestination && searchQuery === '' && (
                 <View className="mt-4 p-4 bg-green-500/20 rounded-2xl">
-                  <Text className="text-white text-lg font-semibold mb-2">
-                    Selected Destination
-                  </Text>
                   <Text className="text-white text-base font-medium">
                     {selectedDestination.name}
                   </Text>

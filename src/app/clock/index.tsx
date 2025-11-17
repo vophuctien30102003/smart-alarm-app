@@ -2,15 +2,14 @@ import { AlarmTabContent } from "@/components/features/alarm-clock/components/Al
 import HeaderTabs from "@/components/features/alarm-clock/components/HeaderTabClock";
 import SetAlarmScreen from "@/components/features/alarm-clock/screens/SetAlarmClockScreen";
 import { useSleepAlarmManagement } from "@/hooks/useSleepAlarmManagement";
-import { useSleepGoal } from "@/hooks/useSleepGoal";
 import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
 import { SafeAreaView, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function AlarmClockPage() {
     const [activeTab, setActiveTab] = useState<"alarm" | "timer">("alarm");
-
-    const { sleepGoal, increaseGoal, decreaseGoal } = useSleepGoal();
+    const insets = useSafeAreaInsets();
     const {
         sleepAlarms,
         showSetAlarm,
@@ -34,15 +33,12 @@ export default function AlarmClockPage() {
     }
 
     return (
-        <SafeAreaView className="flex-1">
-            <LinearGradient colors={["#9887C3", "#090212"]} className="flex-1 ">
+        <SafeAreaView className="flex-1" >
+            <LinearGradient colors={["#9887C3", "#090212"]} style={{ paddingTop: insets.top }}  className="flex-1 ">
                 <HeaderTabs activeTab={activeTab} onChangeTab={setActiveTab} />
 
                 {activeTab === "alarm" ? (
                     <AlarmTabContent
-                        sleepGoal={sleepGoal}
-                        onIncreaseGoal={increaseGoal}
-                        onDecreaseGoal={decreaseGoal}
                         sleepAlarms={sleepAlarms}
                         onAddNewAlarm={startAddAlarm}
                         onEditAlarm={startEditAlarm}

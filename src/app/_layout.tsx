@@ -4,7 +4,6 @@ import { NotificationProvider } from "@/contexts/NotificationProvider";
 import { Stack } from "expo-router";
 import { memo } from "react";
 import { View } from "react-native";
-// import "react-native-get-random-values";
 import "./globals.css";
 
 const MemoizedTabNavigation = memo(TabNavigation);
@@ -13,7 +12,7 @@ export default function RootLayoutNav() {
     return (
         <NotificationProvider>
             <GluestackUIProvider mode={"light"}>
-                    <View className="min-h-screen flex-1 bg-tab-bottom">
+                    <View className="min-h-screen flex-1">
                         <Stack>
                             <Stack.Screen
                                 name="index"
@@ -38,5 +37,3 @@ export default function RootLayoutNav() {
         </NotificationProvider>
     );
 }
-
-

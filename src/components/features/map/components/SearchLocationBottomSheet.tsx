@@ -141,7 +141,6 @@ const SearchLocationBottomSheet: React.FC<SearchLocationBottomSheetProps> = ({ c
                   placeholderTextColor="rgba(255,255,255,0.7)"
                   value={searchQuery}
                   onChangeText={setSearchQuery}
-                  autoFocus
                 />
               </View>
             </View>

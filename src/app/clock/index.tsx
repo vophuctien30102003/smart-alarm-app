@@ -2,6 +2,8 @@ import { AlarmTabContent } from "@/components/features/alarm-clock/components/Al
 import HeaderTabs from "@/components/features/alarm-clock/components/HeaderTabClock";
 import SetAlarmScreen from "@/components/features/alarm-clock/screens/SetAlarmClockScreen";
 import { useSleepAlarmManagement } from "@/hooks/useSleepAlarmManagement";
+import type { SleepAlarmFormData } from "@/shared/types/sleepAlarmForm.type";
+import { formatTime } from "@/shared/utils/timeUtils";
 import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
 import { SafeAreaView, Text, View } from "react-native";
@@ -9,6 +11,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function AlarmClockPage() {
     const [activeTab, setActiveTab] = useState<"alarm" | "timer">("alarm");
+    const [sleepGoalMinutes, setSleepGoalMinutes] = useState(8 * 60);
     const insets = useSafeAreaInsets();
     const {
         sleepAlarms,
@@ -20,11 +23,27 @@ export default function AlarmClockPage() {
         getEditingAlarmData,
     } = useSleepAlarmManagement();
 
+    const buildDefaultSleepAlarmData = (): Partial<SleepAlarmFormData> => {
+        const now = new Date();
+        const bedtime = formatTime(now);
+        const wakeTime = formatTime(
+            new Date(now.getTime() + sleepGoalMinutes * 60 * 1000),
+        );
+
+        return {
+            bedtime,
+            wakeTime,
+            goalMinutes: sleepGoalMinutes,
+        };
+    };
+
     if (showSetAlarm) {
+        const initialData = getEditingAlarmData() ?? buildDefaultSleepAlarmData();
+
         return (
             <SafeAreaView className="flex-1">
                 <SetAlarmScreen
-                    initialData={getEditingAlarmData()}
+                    initialData={initialData}
                     onSave={handleSaveAlarm}
                     onBack={handleBackFromSetAlarm}
                 />
@@ -39,6 +58,8 @@ export default function AlarmClockPage() {
 
                 {activeTab === "alarm" ? (
                     <AlarmTabContent
+                        sleepGoalMinutes={sleepGoalMinutes}
+                        onSleepGoalChange={setSleepGoalMinutes}
                         sleepAlarms={sleepAlarms}
                         onAddNewAlarm={startAddAlarm}
                         onEditAlarm={startEditAlarm}

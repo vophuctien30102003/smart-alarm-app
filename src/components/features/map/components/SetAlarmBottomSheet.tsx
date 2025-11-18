@@ -1,7 +1,7 @@
 import { useAlarms } from '@/hooks/useAlarms';
 import { convertSoundToAlarmSound } from '@/shared/constants/sounds';
 import { AlarmType } from '@/shared/enums';
-import { type LocationAlarm, isLocationAlarm } from '@/shared/types/alarm.type';
+import { isLocationAlarm, type LocationAlarm } from '@/shared/types/alarm.type';
 import type { LocationRepeatOption } from '@/shared/types/alarmLocation.type';
 import type { LocationAlarmPayload } from '@/shared/types/alarmPayload';
 import { LOCATION_REPEAT_OPTIONS, enumToLegacyRepeat, legacyRepeatToEnum } from '@/shared/utils/alarmOptions';
@@ -16,12 +16,11 @@ import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import Slider from '@react-native-community/slider';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-    Alert,
-    SafeAreaView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  SafeAreaView,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 

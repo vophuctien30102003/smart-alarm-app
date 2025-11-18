@@ -105,18 +105,3 @@ export const isLocationAlarm = (alarm: Alarm): alarm is LocationAlarm => {
 export const isSleepAlarm = (alarm: Alarm): alarm is SleepAlarm => {
   return alarm.type === AlarmType.SLEEP;
 };
-export interface LegacyMapAlarm {
-  id: string;
-  name: string;
-  address: string;
-  lat: number;
-  long: number;
-  radius: number;
-  lineName: string;
-  timeBeforeArrival: number;
-  sound: string;
-  repeat: 'Once' | 'Weekdays' | 'Everyday';
-  isActive: boolean;
-  timestamp: Date;
-  mapbox_id?: string;
-}

@@ -2,7 +2,7 @@ import type { LocationTarget } from './alarm.type';
 
 export type LocationRepeatOption = 'Once' | 'Weekdays' | 'Everyday';
 
-export { enumToLegacyRepeat, legacyRepeatToEnum, LOCATION_REPEAT_OPTIONS } from '@/shared/utils/alarmOptions';
+export { LOCATION_REPEAT_OPTIONS, enumToLegacyRepeat, legacyRepeatToEnum } from '@/shared/utils/alarmOptions';
 
 export type LocationType = LocationTarget & {
   createdAt?: Date | string;
@@ -31,16 +31,4 @@ export interface LocationAlarmType extends BaseLocationAlarm {
   lineName: string;
   mapbox_id?: string;
   isActive: boolean;
-}
-
-export interface LocationAlarmHistoryType extends BaseLocationAlarm {
-  distance: number;
-  coordinates: Coordinates
-}
-export interface MapAlarmConfigType {
-  lineName: string;
-  timeBeforeArrival: number;
-  radius: number;
-  sound: string;
-  repeat: LocationRepeatOption;
 }

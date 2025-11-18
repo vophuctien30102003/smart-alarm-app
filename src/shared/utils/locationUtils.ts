@@ -1,7 +1,4 @@
-interface Coordinates {
-  latitude: number;
-  longitude: number;
-}
+import type { Coordinates } from '@/shared/types/alarmLocation.type';
 
 /**
  * Calculate distance between two coordinates using Haversine formula

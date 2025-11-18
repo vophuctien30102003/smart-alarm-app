@@ -9,19 +9,10 @@ export interface Sound {
   isDefault?: boolean;
 }
 
-export type LegacySound = Sound;
-
 export interface AlarmSound {
   id: string;
   name: string;
   filename?: string;
   uri: SoundUri;
   isDefault?: boolean;
-}
-
-export interface AudioSettings {
-  volume: number;
-  vibrate: boolean;
-  fadeIn: boolean;
-  fadeInDuration?: number; 
 }

@@ -134,27 +134,13 @@ function ListAlarmClock({ alarms, onEditAlarm, onAddNewAlarm }: Props) {
         ),
         [handleEditAlarm, handleToggleAlarm, handleDeleteAlarm]
     );
-    const footer = useCallback(
-        () => (
-            <TouchableOpacity
-                style={{ backgroundColor: "rgba(20, 30, 48, 0.25)" }}
-                className="rounded-xl p-4 border border-white/20"
-                onPress={onAddNewAlarm}
-            >
-                <Text className="text-[#8179FF] text-left text-lg">
-                    Add schedule
-                </Text>
-            </TouchableOpacity>
-        ),
-        [onAddNewAlarm]
-    );
+   
     return (
         <View className="flex-1">
             <FlatList
                 data={alarms}
                 keyExtractor={(item) => item.id}
                 renderItem={renderItem}
-                ListFooterComponent={footer}
                 contentContainerStyle={{ paddingBottom: 24 }}
             />
         </View>

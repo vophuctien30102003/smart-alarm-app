@@ -1,164 +1,120 @@
-import { useMemo, useState, useCallback } from "react";
-import { View, TouchableOpacity } from "react-native";
-import Slider from "@react-native-community/slider";
-import { ArrowDown2 } from "iconsax-react-native";
-import { Switch } from "@/components/ui";
+import { Switch } from "@/components";
+import ListSoundSelect from "@/components/ListSoundSelect";
 import { Text } from "@/components/ui/text";
-import { SettingRow } from "./SettingRow";
-import { OptionChips } from "./OptionChips";
+import { getDefaultSound, getSoundById } from "@/shared/utils/soundUtils";
+import { Alarm, ArrowDown2, Clock, Spotify } from "iconsax-react-native";
+import { useCallback, useMemo, useState } from "react";
+import { TextInput, TouchableOpacity, View } from "react-native";
 
-interface SoundOption {
-  id: string;
-  title: string;
-}
 
-interface Props {
-  gentleWakeMinutes: number;
-  gentleWakeOptions: number[];
-  onSelectGentleWake: (value: number) => void;
+export const CustomAlarmClock = () => {
+    const [showDetails, setShowDetails] = useState(true);
+    const [selectedSoundId, setSelectedSoundId] = useState<string>(
+        () => getDefaultSound().id
+    );
+    const [showSoundSheet, setShowSoundSheet] = useState(false);
 
-  snoozeEnabled: boolean;
-  snoozeMinutes: number;
-  snoozeOptions: number[];
-  onToggleSnooze: (value: boolean) => void;
-  onSelectSnooze: (value: number) => void;
+    const selectedSound = useMemo(
+        () => getSoundById(selectedSoundId),
+        [selectedSoundId]
+    );
 
-  volume: number;
-  onChangeVolume: (value: number) => void;
+    const toggleDetails = useCallback(
+        () => setShowDetails((prev) => !prev),
+        []
+    );
 
-  soundId: string;
-  soundOptions: SoundOption[];
-  onSelectSound: (value: string) => void;
+    const handleSoundSelect = useCallback((soundId: string) => {
+        setSelectedSoundId(soundId);
+    }, []);
 
-  vibrate: boolean;
-  onToggleVibrate: (value: boolean) => void;
-}
+    const openSoundSheet = useCallback(() => setShowSoundSheet(true), []);
+    const closeSoundSheet = useCallback(() => setShowSoundSheet(false), []);
 
-const formatMinutesLabel = (minutes: number): string =>
-  minutes === 0 ? "Off" : `${minutes} min`;
+    return (
+        <>
+            <View className="mt-8">
+                <View className="flex-row justify-between items-center py-3">
+                    <Text className="text-[#F8FAFC] text-[17px] font-semibold">
+                        Custom alarm
+                    </Text>
+                    <TouchableOpacity
+                        className="bg-[#9887C340] rounded-full p-2"
+                        onPress={toggleDetails}
+                        accessibilityRole="button"
+                        accessibilityLabel="Toggle custom alarm settings"
+                    >
+                        <ArrowDown2
+                            size="24"
+                            color="#d9e3f0"
+                            style={{
+                                transform: [
+                                    { rotate: showDetails ? "180deg" : "0deg" },
+                                ],
+                            }}
+                        />
+                    </TouchableOpacity>
+                </View>
 
-export const CustomAlarmClock = ({
-  gentleWakeMinutes,
-  gentleWakeOptions,
-  onSelectGentleWake,
-  snoozeEnabled,
-  snoozeMinutes,
-  snoozeOptions,
-  onToggleSnooze,
-  onSelectSnooze,
-  volume,
-  onChangeVolume,
-  soundId,
-  soundOptions,
-  onSelectSound,
-  vibrate,
-  onToggleVibrate,
-}: Props) => {
-  const [showDetails, setShowDetails] = useState(true);
+                {showDetails && (
+                    <View className="space-y-4 flex-col gap-4 mb-4">
+                        <View className="border border-white/10 rounded-2xl py-3 px-4 bg-white/5 flex-row justify-between items-center">
+                            <View className="flex-row items-center gap-2">
+                                <Alarm size="24" color="#d9e3f0" />
+                                <Text className="text-[#F8FAFC] text-[16px]">
+                                    Label
+                                </Text>
+                            </View>
+                            <TextInput
+                                className="text-[#F8FAFC] text-[16px] text-center"
+                                placeholder="Alarm"
+                                placeholderTextColor="#B3B3B3"
+                            />
+                        </View>
 
-  const currentSoundLabel = useMemo(
-    () => soundOptions.find((s) => s.id === soundId)?.title ?? "Default",
-    [soundId, soundOptions]
-  );
-
-  const toggleDetails = useCallback(() => setShowDetails((prev) => !prev), []);
-
-  return (
-    <View className="mt-8">
-      <View className="flex-row justify-between items-center py-3">
-        <Text className="text-[#F8FAFC] text-[17px] font-semibold">
-          Custom alarm
-        </Text>
-        <TouchableOpacity
-          className="bg-[#9887C340] rounded-full p-2"
-          onPress={toggleDetails}
-          accessibilityRole="button"
-          accessibilityLabel="Toggle custom alarm settings"
-        >
-          <ArrowDown2
-            size="24"
-            color="#d9e3f0"
-            style={{
-              transform: [{ rotate: showDetails ? "180deg" : "0deg" }],
-            }}
-          />
-        </TouchableOpacity>
-      </View>
-
-      {/* Settings */}
-      {showDetails && (
-        <View className="space-y-4 flex-col gap-4 mb-4">
-          <SettingRow
-            title="Gentle wake up"
-            icon="🎵"
-            valueLabel={formatMinutesLabel(gentleWakeMinutes)}
-          >
-            <OptionChips
-              options={gentleWakeOptions}
-              selectedValue={gentleWakeMinutes}
-              onSelect={onSelectGentleWake}
-            />
-          </SettingRow>
-
-          <SettingRow
-            title="Snooze"
-            icon="⏰"
-            valueLabel={snoozeEnabled ? formatMinutesLabel(snoozeMinutes) : "Off"}
-          >
-            <View className="flex-row items-center justify-between">
-              <Switch
-                value={snoozeEnabled}
-                onValueChange={onToggleSnooze}
-                accessibilityLabel="Toggle snooze"
-              />
-              <OptionChips
-                options={snoozeOptions}
-                selectedValue={snoozeMinutes}
-                onSelect={onSelectSnooze}
-                disabled={!snoozeEnabled}
-              />
+                        <View className="border border-white/10 rounded-2xl py-3 px-4 bg-white/5 flex-row justify-between items-center">
+                            <View className="flex-row items-center gap-2">
+                                <Clock
+                                    size={24}
+                                    color="#F8FAFC"
+                                    className="p-4"
+                                />
+                                <Text className="text-[#F8FAFC] text-[16px]">
+                                    Snooze
+                                </Text>
+                            </View>
+                            <Switch />
+                        </View>
+                        <View className="border border-white/10 rounded-2xl py-3 px-4 bg-white/5 flex-row justify-between items-center">
+                            <View className="flex-row items-center gap-2">
+                                <Spotify
+                                    size={24}
+                                    color="#F8FAFC"
+                                    className="p-4"
+                                />
+                                <Text className="text-[#F8FAFC] text-[16px]">
+                                    Alarm sound
+                                </Text>
+                            </View>
+                            <TouchableOpacity
+                                onPress={openSoundSheet}
+                                accessibilityRole="button"
+                                accessibilityLabel="Choose alarm sound"
+                            >
+                                <Text className="text-[#B3B3B3] text-[16px]">
+                                    {selectedSound?.title ?? "sound"} {" >"}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                )}
             </View>
-          </SettingRow>
-
-          <SettingRow
-            title="Alarm volume"
-            icon="🔊"
-            valueLabel={`${Math.round(volume * 100)}%`}
-          >
-            <Slider
-              value={volume}
-              onValueChange={onChangeVolume}
-              minimumValue={0}
-              maximumValue={1}
-              step={0.01}
-              minimumTrackTintColor="#8179FF"
-              maximumTrackTintColor="rgba(255,255,255,0.2)"
-              thumbTintColor="#FFFFFF"
-              accessibilityLabel="Adjust alarm volume"
+            <ListSoundSelect
+                selectedSoundId={selectedSoundId}
+                onSelect={handleSoundSelect}
+                isVisible={showSoundSheet}
+                onClose={closeSoundSheet}
             />
-          </SettingRow>
-
-          <SettingRow title="Alarm sound" icon="🎶" valueLabel={currentSoundLabel}>
-            <OptionChips
-              options={soundOptions.map((s) => s.id)}
-              selectedValue={soundId}
-              onSelect={onSelectSound}
-              renderLabel={(v) =>
-                soundOptions.find((s) => s.id === v)?.title ?? v
-              }
-            />
-          </SettingRow>
-
-          <SettingRow title="Vibration" icon="📳" valueLabel={vibrate ? "On" : "Off"}>
-            <Switch
-              value={vibrate}
-              onValueChange={onToggleVibrate}
-              accessibilityLabel="Toggle vibration"
-            />
-          </SettingRow>
-        </View>
-      )}
-    </View>
-  );
+        </>
+    );
 };
-

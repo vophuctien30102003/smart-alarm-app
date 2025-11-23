@@ -63,7 +63,6 @@ const SetAlarmBottomSheet: React.FC<SetAlarmBottomSheetProps> = ({ isVisible, on
   const [isLoading, setIsLoading] = useState(false);
   const selectedSound = useMemo(() => resolveSound(selectedSoundId), [selectedSoundId]);
 
-  const timeOptions = [1, 2, 5, 10, 15, 20, 30];
   const soundOptions = availableSounds;
   const repeatOptions = LOCATION_REPEAT_OPTIONS;
 

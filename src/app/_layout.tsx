@@ -4,14 +4,16 @@ import { NotificationProvider } from "@/contexts/NotificationProvider";
 import { Stack } from "expo-router";
 import { memo } from "react";
 import { View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "./globals.css";
 
 const MemoizedTabNavigation = memo(TabNavigation);
 
 export default function RootLayoutNav() {
     return (
-        <NotificationProvider>
-            <GluestackUIProvider mode={"light"}>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+            <NotificationProvider>
+                <GluestackUIProvider mode={"light"}>
                     <View className="min-h-screen flex-1">
                         <Stack>
                             <Stack.Screen
@@ -33,7 +35,8 @@ export default function RootLayoutNav() {
                         </Stack>
                         <MemoizedTabNavigation />
                     </View>
-            </GluestackUIProvider>
-        </NotificationProvider>
+                </GluestackUIProvider>
+            </NotificationProvider>
+        </GestureHandlerRootView>
     );
 }

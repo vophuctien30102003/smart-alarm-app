@@ -4,6 +4,8 @@ const soundAssets = {
     'funny.mp3': require('../../assets/sound/funny.mp3'),
     'ghost_music.mp3': require('../../assets/sound/ghost_music.mp3'),
     'ringtone.mp3': require('../../assets/sound/ringtone.mp3'),
+    'wake_up.mp3': require('../../assets/sound/wake_up.mp3'),
+    'alarm_clock.mp3': require('../../assets/sound/alarm_clock.mp3'),
 };
 
 const createDisplayName = (filename: string): string => {
@@ -14,7 +16,6 @@ const createDisplayName = (filename: string): string => {
         .join(' ');
 };
 
-// Cache for sounds array to avoid recreating on each call
 let soundsCache: Sound[] | null = null;
 
 export const getAllSounds = (): Sound[] => {

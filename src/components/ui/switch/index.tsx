@@ -4,7 +4,7 @@ import { tva } from '@gluestack-ui/nativewind-utils/tva';
 import { withStyleContext } from '@gluestack-ui/nativewind-utils/withStyleContext';
 import { createSwitch } from '@gluestack-ui/switch';
 import React from 'react';
-import { Switch as RNSwitch } from 'react-native';
+import { Switch as RNSwitch, type ColorValue } from 'react-native';
 
 const UISwitch = createSwitch({
   Root: withStyleContext(RNSwitch),
@@ -27,11 +27,27 @@ type ISwitchProps = React.ComponentProps<typeof UISwitch> &
 const Switch = React.forwardRef<
   React.ComponentRef<typeof UISwitch>,
   ISwitchProps
->(function Switch({ className, size = 'md', ...props }, ref) {
+>(function Switch(
+  { className, size = 'md', trackColor, thumbColor, ...props }: ISwitchProps,
+  ref,
+) {
+  const mergedTrackColor: {
+    false?: ColorValue;
+    true?: ColorValue;
+  } =
+    trackColor === undefined
+      ? { true: '#9887C3' }
+      : {
+          ...trackColor,
+          true: trackColor.true ?? '#9887C3',
+        };
+
   return (
     <UISwitch
       ref={ref}
       {...props}
+      trackColor={mergedTrackColor}
+      thumbColor={thumbColor ?? '#FFFFFF'}
       className={switchStyle({ size, class: className })}
     />
   );

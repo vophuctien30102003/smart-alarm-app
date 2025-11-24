@@ -18,8 +18,6 @@ class AlarmSoundService {
   }
 
   private triggerVibration(alarm?: Alarm): void {
-    if (!alarm?.vibrate) return;
-
     const vibrate = () => {
       if (Platform.OS === 'ios') {
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -55,7 +53,6 @@ class AlarmSoundService {
       });
 
       const player = createAudioPlayer(source);
-      player.volume = alarm?.volume ?? ALARM_TIME_DEFAULTS.VOLUME;
       player.loop = true;
       player.play();
       this.player = player;

@@ -4,33 +4,32 @@ import { AlarmRepeatType } from "@/shared/enums";
 import type { AlarmPayload } from "@/shared/types/alarmPayload";
 import { ensureValidAlarmPayload } from "@/shared/utils/alarmUtils";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Platform } from "react-native";
 
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import type {
-  Alarm,
-  AlarmStore,
-  LocationAlarm,
-  LocationTarget,
+    Alarm,
+    AlarmStore,
+    LocationAlarm,
+    LocationTarget,
 } from "../shared/types/alarm.type";
 import { isLocationAlarm } from "../shared/types/alarm.type";
 import type { LocationAlarmStatus } from "../shared/types/locationTracking.type";
 
 import { createLocationTracker } from "@/store/modules/locationTracker";
 import {
-  clearSnoozeTimeout,
-  scheduleSnoozeTimeout,
+    clearSnoozeTimeout,
+    scheduleSnoozeTimeout,
 } from "@/store/modules/snoozeManager";
 import {
-  alarmToPayload,
-  buildAlarmFromPayload,
-  createNewAlarm,
-  normalizeAlarmPayload,
+    alarmToPayload,
+    buildAlarmFromPayload,
+    createNewAlarm,
+    normalizeAlarmPayload,
 } from "./helpers/alarmTransformers";
 import {
-  cancelNotificationsForAlarm,
-  scheduleNotificationsForAlarm,
+    cancelNotificationsForAlarm,
+    scheduleNotificationsForAlarm,
 } from "./helpers/notificationHelpers";
 import { getNextAlarmTime, isAlarmActive } from "./helpers/timeCalculations";
 
@@ -176,13 +175,13 @@ export const useAlarmStore = create<AlarmStore>()(
                     const { activeAlarm, snoozeCount } = get();
                     if (!activeAlarm) return;
 
-                    const maxSnooze =
-                        activeAlarm.maxSnoozeCount ||
-                        ALARM_TIME_DEFAULTS.MAX_SNOOZE_COUNT;
-                    if (snoozeCount >= maxSnooze) {
-                        void get().stopAlarm();
-                        return;
-                    }
+                    // const maxSnooze =
+                    //     activeAlarm.maxSnoozeCount ||
+                    //     ALARM_TIME_DEFAULTS.MAX_SNOOZE_COUNT;
+                    // if (snoozeCount >= maxSnooze) {
+                    //     void get().stopAlarm();
+                    //     return;
+                    // }
 
                     set({
                         isPlaying: false,
@@ -192,8 +191,7 @@ export const useAlarmStore = create<AlarmStore>()(
 
                     scheduleSnoozeTimeout(
                         activeAlarm,
-                        activeAlarm.snoozeDuration ||
-                            ALARM_TIME_DEFAULTS.SNOOZE_DURATION,
+                        ALARM_TIME_DEFAULTS.SNOOZE_DURATION,
                         (alarmToTrigger) => {
                             const currentState = get();
                             if (
@@ -299,11 +297,11 @@ locationTracker.registerCallbacks({
 });
 
 export {
-  selectActiveAlarms,
-  selectAlarmById,
-  selectAlarms,
-  selectSleepAlarms,
-  sortAlarmsByPriority
+    selectActiveAlarms,
+    selectAlarmById,
+    selectAlarms,
+    selectSleepAlarms,
+    sortAlarmsByPriority
 } from "./helpers/alarmSelectors";
 
 export type { SleepAlarm } from "../shared/types/alarm.type";

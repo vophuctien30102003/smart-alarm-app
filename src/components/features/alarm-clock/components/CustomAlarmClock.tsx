@@ -1,22 +1,34 @@
 import { Switch } from "@/components";
 import ListSoundSelect from "@/components/ListSoundSelect";
 import { Text } from "@/components/ui/text";
-import { getDefaultSound, getSoundById } from "@/shared/utils/soundUtils";
+import { getSoundById } from "@/shared/utils/soundUtils";
 import { Alarm, ArrowDown2, Clock, Spotify } from "iconsax-react-native";
 import { useCallback, useMemo, useState } from "react";
 import { TextInput, TouchableOpacity, View } from "react-native";
 
+interface CustomAlarmClockProps {
+    label: string;
+    snoozeEnabled: boolean;
+    soundId: string;
+    onLabelChange: (label: string) => void;
+    onSnoozeChange: (enabled: boolean) => void;
+    onSoundChange: (soundId: string) => void;
+}
 
-export const CustomAlarmClock = () => {
+export const CustomAlarmClock = ({
+    label,
+    snoozeEnabled,
+    soundId,
+    onLabelChange,
+    onSnoozeChange,
+    onSoundChange,
+}: CustomAlarmClockProps) => {
     const [showDetails, setShowDetails] = useState(true);
-    const [selectedSoundId, setSelectedSoundId] = useState<string>(
-        () => getDefaultSound().id
-    );
     const [showSoundSheet, setShowSoundSheet] = useState(false);
 
     const selectedSound = useMemo(
-        () => getSoundById(selectedSoundId),
-        [selectedSoundId]
+        () => getSoundById(soundId),
+        [soundId]
     );
 
     const toggleDetails = useCallback(
@@ -25,8 +37,8 @@ export const CustomAlarmClock = () => {
     );
 
     const handleSoundSelect = useCallback((soundId: string) => {
-        setSelectedSoundId(soundId);
-    }, []);
+        onSoundChange(soundId);
+    }, [onSoundChange]);
 
     const openSoundSheet = useCallback(() => setShowSoundSheet(true), []);
     const closeSoundSheet = useCallback(() => setShowSoundSheet(false), []);
@@ -66,9 +78,9 @@ export const CustomAlarmClock = () => {
                                 </Text>
                             </View>
                             <TextInput
+                                value={label}
+                                onChangeText={onLabelChange}
                                 className="text-[#F8FAFC] text-[16px] text-center"
-                                placeholder="Alarm"
-                                placeholderTextColor="#B3B3B3"
                             />
                         </View>
 
@@ -83,7 +95,7 @@ export const CustomAlarmClock = () => {
                                     Snooze
                                 </Text>
                             </View>
-                            <Switch />
+                            <Switch value={snoozeEnabled} onValueChange={onSnoozeChange} />
                         </View>
                         <View className="border border-white/10 rounded-2xl py-3 px-4 bg-white/5 flex-row justify-between items-center">
                             <View className="flex-row items-center gap-2">
@@ -110,7 +122,7 @@ export const CustomAlarmClock = () => {
                 )}
             </View>
             <ListSoundSelect
-                selectedSoundId={selectedSoundId}
+                selectedSoundId={soundId}
                 onSelect={handleSoundSelect}
                 isVisible={showSoundSheet}
                 onClose={closeSoundSheet}

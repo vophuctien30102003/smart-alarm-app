@@ -42,6 +42,9 @@ const SleepAlarmItem = memo(function SleepAlarmItem({
             <View className="flex-row justify-between items-center mb-3">
                 <View className="flex-1">
                     <Text className="text-white text-base font-semibold">
+                        {item.label}
+                    </Text>
+                    <Text className="text-white/15 text-xs font-semibold">
                         {repeatSummary}
                     </Text>
                 </View>

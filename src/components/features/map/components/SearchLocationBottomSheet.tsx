@@ -1,6 +1,6 @@
 import { Text } from '@/components/ui';
 import { useMapboxSearch } from '@/hooks/useMapboxSearch';
-import { type LocationAlarm, isLocationAlarm } from '@/shared/types/alarm.type';
+import { isLocationAlarm, type LocationAlarm } from '@/shared/types/alarm.type';
 import { LocationType } from '@/shared/types/alarmLocation.type';
 import { enumToLegacyRepeat } from '@/shared/utils/alarmOptions';
 import { calculateDistance } from '@/shared/utils/locationUtils';

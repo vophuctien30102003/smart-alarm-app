@@ -1,6 +1,7 @@
 import AlarmHistoryBottomSheet from '@/components/features/map/components/AlarmHistoryBottomSheet';
 import SearchLocationBottomSheet from '@/components/features/map/components/SearchLocationBottomSheet';
 import SetAlarmBottomSheet from '@/components/features/map/components/SetAlarmBottomSheet';
+import useLocationPermission from '@/hooks/useLocationPermission';
 import { isLocationAlarm } from '@/shared/types/alarm.type';
 import { selectAlarms, useAlarmStore } from '@/store/alarmStore';
 import { mapAlarmActions, mapAlarmSelectors, migrateLegacyLocationAlarms, useMapAlarmStore } from '@/store/mapAlarmStore';
@@ -9,7 +10,6 @@ import Mapbox, { Camera, LocationPuck, MapView, ShapeSource } from '@rnmapbox/ma
 import Constants from 'expo-constants';
 import { useCallback, useEffect, useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import useLocationPermission from '@/hooks/useLocationPermission';
 
 Mapbox.setAccessToken(Constants.expoConfig?.extra?.mapboxAccessToken);
 export default function MapScreen() {

@@ -26,7 +26,6 @@ export interface SleepAlarmPayload extends BaseAlarmPayload {
   wakeUpTime: string;
   repeatDays?: WeekDay[];
   goalMinutes?: number;
-  gentleWakeMinutes?: number;
 }
 
 export interface LocationAlarmPayload extends BaseAlarmPayload {

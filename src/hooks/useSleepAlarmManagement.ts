@@ -3,7 +3,8 @@ import { AlarmType } from '@/shared/enums';
 import { isSleepAlarm, type SleepAlarm } from '@/shared/types/alarm.type';
 import type { SleepAlarmPayload } from '@/shared/types/alarmPayload';
 import type { SleepAlarmFormData } from '@/shared/types/sleepAlarmForm.type';
-import { formatAlarmLabel } from '@/shared/utils/alarmUtils';
+import { convertSoundIdToAlarmSound, formatAlarmLabel } from '@/shared/utils/alarmUtils';
+import { getDefaultSound } from '@/shared/utils/soundUtils';
 import { useCallback, useMemo, useState } from 'react';
 
 export const useSleepAlarmManagement = () => {
@@ -14,36 +15,27 @@ export const useSleepAlarmManagement = () => {
   const sleepAlarms = useMemo(() => alarms.filter(isSleepAlarm), [alarms]);
 
   const handleSaveAlarm = useCallback(async (alarmData: SleepAlarmFormData) => {
-    const label = formatAlarmLabel({ 
-      label: alarmData.label, 
+    const payload: SleepAlarmPayload = {
       type: AlarmType.SLEEP,
-      repeatDays: alarmData.selectedDays 
-    });
+      label: formatAlarmLabel({ label: alarmData.label, type: AlarmType.SLEEP, repeatDays: alarmData.selectedDays }),
+      bedtime: alarmData.bedtime,
+      wakeUpTime: alarmData.wakeTime,
+      repeatDays: alarmData.selectedDays,
+      goalMinutes: alarmData.goalMinutes,
+      isEnabled: true,
+      snoozeEnabled: alarmData.snoozeEnabled,
+      sound: convertSoundIdToAlarmSound(alarmData.soundId),
+      volume: 1,
+      vibrate: true,
+      snoozeDuration: 5,
+      maxSnoozeCount: 0,
+    };
+
     try {
       if (editingAlarmId) {
-        await updateAlarm(editingAlarmId, {
-          type: AlarmType.SLEEP,
-          label,
-          bedtime: alarmData.bedtime,
-          wakeUpTime: alarmData.wakeTime,
-          repeatDays: alarmData.selectedDays,
-          goalMinutes: alarmData.goalMinutes,
-          isEnabled: true,
-        } as Partial<SleepAlarmPayload>);
+        await updateAlarm(editingAlarmId, payload);
       } else {
-        await addAlarm({
-          type: AlarmType.SLEEP,
-          label,
-          bedtime: alarmData.bedtime,
-          wakeUpTime: alarmData.wakeTime,
-          repeatDays: alarmData.selectedDays,
-          goalMinutes: alarmData.goalMinutes,
-          isEnabled: true,
-          vibrate: true,
-          snoozeEnabled: false,
-          snoozeDuration: 5,
-          maxSnoozeCount: 0,
-        } as SleepAlarmPayload);
+        await addAlarm(payload);
       }
       setEditingAlarmId(null);
       setShowSetAlarm(false);
@@ -57,24 +49,29 @@ export const useSleepAlarmManagement = () => {
     setEditingAlarmId(null);
   }, []);
 
-  const startAddAlarm = useCallback(() => setShowSetAlarm(true), []);
+  const startAddAlarm = useCallback(() => {
+    setEditingAlarmId(null);
+    setShowSetAlarm(true);
+  }, []);
 
   const startEditAlarm = useCallback((alarm: SleepAlarm) => {
     setEditingAlarmId(alarm.id);
     setShowSetAlarm(true);
   }, []);
 
-  const getEditingAlarmData = useCallback(() => {
+  const getEditingAlarmData = useCallback((): Partial<SleepAlarmFormData> | undefined => {
     if (!editingAlarmId) return undefined;
-    
-    const editingAlarm = sleepAlarms.find(alarm => alarm.id === editingAlarmId);
-    return editingAlarm ? {
-      bedtime: editingAlarm.bedtime,
-      wakeTime: editingAlarm.wakeUpTime,
-      selectedDays: editingAlarm.repeatDays,
-      goalMinutes: editingAlarm.goalMinutes ?? 0,
-      label: editingAlarm.label,
-    } : undefined;
+    const alarm = sleepAlarms.find(a => a.id === editingAlarmId);
+    if (!alarm) return undefined;
+    return {
+      bedtime: alarm.bedtime,
+      wakeTime: alarm.wakeUpTime,
+      selectedDays: alarm.repeatDays,
+      goalMinutes: alarm.goalMinutes ?? 0,
+      label: alarm.label,
+      snoozeEnabled: alarm.snoozeEnabled,
+      soundId: alarm.sound?.id ?? getDefaultSound().id,
+    };
   }, [editingAlarmId, sleepAlarms]);
 
   return {

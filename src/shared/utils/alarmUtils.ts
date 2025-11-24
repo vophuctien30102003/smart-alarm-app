@@ -7,6 +7,9 @@ import type {
   SleepAlarmPayload,
   TimeAlarmPayload,
 } from '@/shared/types/alarmPayload';
+import type { AlarmSound } from '@/shared/types/sound.type';
+import { convertSoundToAlarmSound } from '@/shared/utils/alarmOptions';
+import { getDefaultSound, getSoundById } from '@/shared/utils/soundUtils';
 import { formatRepeatDays } from '@/shared/utils/timeUtils';
 
 interface LabelOptions {
@@ -19,18 +22,17 @@ export const formatAlarmLabel = ({ label, type, repeatDays }: LabelOptions): str
   const trimmed = (label ?? '').trim();
   if (trimmed.length > 0) return trimmed;
 
-  if (type === AlarmType.SLEEP || type === AlarmType.TIME) {
-    if (repeatDays && repeatDays.length > 0) {
-      return formatRepeatDays(repeatDays);
-    }
-    return type === AlarmType.SLEEP ? 'Sleep schedule' : 'Alarm';
+  if ((type === AlarmType.SLEEP || type === AlarmType.TIME) && repeatDays?.length) {
+    return formatRepeatDays(repeatDays);
   }
 
-  return 'Location alarm';
+  return type === AlarmType.SLEEP ? 'Sleep schedule' 
+       : type === AlarmType.TIME ? 'Alarm' 
+       : 'Location alarm';
 };
 
 export const formatAlarmRepeatDescription = (alarm: Alarm): string => {
-  if ('repeatDays' in alarm && alarm.repeatDays.length > 0) {
+  if ('repeatDays' in alarm && alarm.repeatDays?.length) {
     return formatRepeatDays(alarm.repeatDays);
   }
   return 'Once';
@@ -54,32 +56,20 @@ export const validateAlarmData = (alarm: {
 }): { isValid: boolean; errors: string[] } => {
   const errors: string[] = [];
 
-  if (!validateAlarmTime(alarm.time)) {
-    errors.push('Invalid time format');
-  }
-
-  if (!validateAlarmLabel(alarm.label)) {
-    errors.push('Label must be 1-50 characters long');
-  }
-
+  if (!validateAlarmTime(alarm.time)) errors.push('Invalid time format');
+  if (!validateAlarmLabel(alarm.label)) errors.push('Label must be 1-50 characters long');
   if (alarm.volume !== undefined && (alarm.volume < 0 || alarm.volume > 1)) {
     errors.push('Volume must be between 0 and 1');
   }
-
   if (alarm.snoozeDuration !== undefined && alarm.snoozeDuration < 1) {
     errors.push('Snooze duration must be at least 1 minute');
   }
 
-  return {
-    isValid: errors.length === 0,
-    errors
-  };
+  return { isValid: !errors.length, errors };
 };
 
 const validateBase = (payload: AlarmPayload, errors: string[]) => {
-  if (!isNonEmpty(payload.label)) {
-    errors.push('Label must not be empty.');
-  }
+  if (!isNonEmpty(payload.label)) errors.push('Label must not be empty.');
 
   const volume = payload.volume ?? 0.8;
   if (!isFiniteNumber(volume) || volume < 0 || volume > 1) {
@@ -98,10 +88,7 @@ const validateBase = (payload: AlarmPayload, errors: string[]) => {
 };
 
 const validateTimeAlarm = (payload: TimeAlarmPayload, errors: string[]) => {
-  if (!isTimeString(payload.time)) {
-    errors.push('Invalid time format. Expected HH:mm.');
-  }
-
+  if (!isTimeString(payload.time)) errors.push('Invalid time format. Expected HH:mm.');
   if (payload.repeatDays && !Array.isArray(payload.repeatDays)) {
     errors.push('Repeat days must be an array.');
   }
@@ -111,7 +98,6 @@ const validateSleepAlarm = (payload: SleepAlarmPayload, errors: string[]) => {
   if (!isTimeString(payload.bedtime) || !isTimeString(payload.wakeUpTime)) {
     errors.push('Bedtime and wake time must be in HH:mm format.');
   }
-
   if (payload.repeatDays && !Array.isArray(payload.repeatDays)) {
     errors.push('Repeat days must be an array.');
   }
@@ -124,11 +110,7 @@ const validateLocationAlarm = (payload: LocationAlarmPayload, errors: string[]) 
   }
 
   const { coordinates } = payload.targetLocation;
-  if (
-    !coordinates ||
-    !isFiniteNumber(coordinates.latitude) ||
-    !isFiniteNumber(coordinates.longitude)
-  ) {
+  if (!coordinates || !isFiniteNumber(coordinates.latitude) || !isFiniteNumber(coordinates.longitude)) {
     errors.push('Target location coordinates are invalid.');
   }
 
@@ -144,7 +126,6 @@ const validateLocationAlarm = (payload: LocationAlarmPayload, errors: string[]) 
 
 export const validateAlarmPayload = (payload: AlarmPayload) => {
   const errors: string[] = [];
-
   validateBase(payload, errors);
 
   switch (payload.type) {
@@ -161,10 +142,7 @@ export const validateAlarmPayload = (payload: AlarmPayload) => {
       errors.push('Unsupported alarm type.');
   }
 
-  return {
-    isValid: errors.length === 0,
-    errors,
-  };
+  return { isValid: !errors.length, errors };
 };
 
 export const ensureValidAlarmPayload = <T extends AlarmPayload>(payload: T): T => {
@@ -173,4 +151,8 @@ export const ensureValidAlarmPayload = <T extends AlarmPayload>(payload: T): T =
     throw new Error(result.errors.join(' '));
   }
   return payload;
+};
+
+export const convertSoundIdToAlarmSound = (soundId: string): AlarmSound => {
+  return convertSoundToAlarmSound(getSoundById(soundId) || getDefaultSound());
 };

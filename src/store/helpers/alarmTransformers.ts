@@ -5,22 +5,19 @@ import type { AlarmPayload, LocationAlarmPayload, SleepAlarmPayload, TimeAlarmPa
 import { formatAlarmLabel } from '@/shared/utils/alarmUtils';
 import { generateTimestampId } from '@/shared/utils/idUtils';
 
-/**
- * Convert an Alarm object to its corresponding AlarmPayload
- */
 export const alarmToPayload = (alarm: Alarm): AlarmPayload => {
+  const base = {
+    label: alarm.label,
+    isEnabled: alarm.isEnabled,
+    sound: alarm.sound,
+    snoozeEnabled: alarm.snoozeEnabled,
+  };
+
   switch (alarm.type) {
     case AlarmType.TIME:
       return {
+        ...base,
         type: AlarmType.TIME,
-        label: alarm.label,
-        isEnabled: alarm.isEnabled,
-        sound: alarm.sound,
-        volume: alarm.volume,
-        vibrate: alarm.vibrate,
-        snoozeEnabled: alarm.snoozeEnabled,
-        snoozeDuration: alarm.snoozeDuration,
-        maxSnoozeCount: alarm.maxSnoozeCount,
         time: alarm.time,
         repeatDays: alarm.repeatDays,
         deleteAfterNotification: alarm.deleteAfterNotification,
@@ -28,34 +25,19 @@ export const alarmToPayload = (alarm: Alarm): AlarmPayload => {
 
     case AlarmType.SLEEP:
       return {
+        ...base,
         type: AlarmType.SLEEP,
-        label: alarm.label,
-        isEnabled: alarm.isEnabled,
-        sound: alarm.sound,
-        volume: alarm.volume,
-        vibrate: alarm.vibrate,
-        snoozeEnabled: alarm.snoozeEnabled,
-        snoozeDuration: alarm.snoozeDuration,
-        maxSnoozeCount: alarm.maxSnoozeCount,
         bedtime: alarm.bedtime,
         wakeUpTime: alarm.wakeUpTime,
         repeatDays: alarm.repeatDays,
         goalMinutes: alarm.goalMinutes,
-        gentleWakeMinutes: alarm.gentleWakeMinutes,
       } as SleepAlarmPayload;
 
     case AlarmType.LOCATION:
     default:
       return {
+        ...base,
         type: AlarmType.LOCATION,
-        label: alarm.label,
-        isEnabled: alarm.isEnabled,
-        sound: alarm.sound,
-        volume: alarm.volume,
-        vibrate: alarm.vibrate,
-        snoozeEnabled: alarm.snoozeEnabled,
-        snoozeDuration: alarm.snoozeDuration,
-        maxSnoozeCount: alarm.maxSnoozeCount,
         targetLocation: alarm.targetLocation,
         radiusMeters: alarm.radiusMeters,
         timeBeforeArrival: alarm.timeBeforeArrival,
@@ -155,7 +137,6 @@ export const buildAlarmFromPayload = (
       wakeUpTime: payload.wakeUpTime,
       repeatDays: payload.repeatDays ?? [],
       goalMinutes: payload.goalMinutes,
-      gentleWakeMinutes: payload.gentleWakeMinutes,
       bedtimeNotificationIds: [],
       wakeNotificationIds: [],
     } as SleepAlarm;

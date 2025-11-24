@@ -20,11 +20,7 @@ export interface BaseAlarm {
   label: string;
   isEnabled: boolean;
   sound?: AlarmSound;
-  volume: number;
-  vibrate: boolean;
   snoozeEnabled: boolean;
-  snoozeDuration: number;
-  maxSnoozeCount: number;
   createdAt: Date | string;
   updatedAt: Date | string;
   notificationId?: string;
@@ -54,7 +50,6 @@ export interface SleepAlarm extends BaseAlarm {
   goalMinutes?: number;
   bedtimeNotificationIds?: string[];
   wakeNotificationIds?: string[];
-  gentleWakeMinutes?: number;
 }
 
 export type Alarm = TimeAlarm | LocationAlarm | SleepAlarm;

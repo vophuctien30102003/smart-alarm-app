@@ -1,13 +1,13 @@
 import { Text } from "@/components/ui/text";
+import { useSleepAlarmForm } from "@/hooks/useSleepAlarmForm";
+import { days } from "@/shared/constants/dayInWeek";
 import type { SleepAlarmFormData } from "@/shared/types/sleepAlarmForm.type";
 import { formatTime, timeStringToDate } from "@/shared/utils/timeUtils";
 import { LinearGradient } from "expo-linear-gradient";
 import { Back } from "iconsax-react-native";
 import { ScrollView, TouchableOpacity, View } from "react-native";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { useSleepAlarmForm } from "@/hooks/useSleepAlarmForm";
 import { CustomAlarmClock } from "../components/CustomAlarmClock";
-import { days } from "@/shared/constants/dayInWeek";
 
 interface Props {
     onSave: (alarmData: SleepAlarmFormData) => void;
@@ -23,11 +23,13 @@ export default function SetAlarmScreen({ onSave, onBack, initialData }: Props) {
         bedtime,
         wakeTime,
         sleepDuration,
-        gentleWakeMinutes,
         isPickerVisibleFor,
+        label,
+        snoozeEnabled,
+        soundId,
     } = state;
 
-    const { toggleDay } = actions;
+    const { toggleDay, setLabel, setSnoozeEnabled, setSoundId } = actions;
 
     const handleSave = () => {
         const alarmData = actions.createFormData();
@@ -160,7 +162,14 @@ export default function SetAlarmScreen({ onSave, onBack, initialData }: Props) {
                         </View>
                     </View>
                 </View>
-                <CustomAlarmClock gentleWakeMinutes={gentleWakeMinutes} />
+                <CustomAlarmClock
+                    label={label}
+                    snoozeEnabled={snoozeEnabled}
+                    soundId={soundId}
+                    onLabelChange={setLabel}
+                    onSnoozeChange={setSnoozeEnabled}
+                    onSoundChange={setSoundId}
+                />
             </ScrollView>
             <DateTimePickerModal
                 isVisible={isPickerVisibleFor !== null}
